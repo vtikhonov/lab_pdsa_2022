@@ -5,7 +5,7 @@
 ### 1. K-Top frequency with Count-Min Sketch problem implementation
 The task was covered in the course and you could find corresponding slides in https://drive.google.com/file/d/1byG7KldSnqnaZLq7zW3kswaAH4zGnNRl/view?usp=sharing under 'Count-Min Sketch' sub section.
 
-The input datasets shall be read as a txt file and the words extracted using " ,.:;!" separators, and some obvious frequent words like articles or shall be omitted, the application shall use skip_words.txt for such words.
+The input datasets shall be read as a txt file and the words extracted using " ,.:;!" separators, and some obvious frequent words like articles or pronouns shall be omitted, the application shall use skip_words.txt for such words.
 
 The application shall take next arguments:
 * --input PATH: path to file or folder with a textual file
