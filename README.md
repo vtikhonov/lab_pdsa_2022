@@ -37,7 +37,7 @@ The input datasets shall be read as a txt file and the words extracted using " ,
 ... TBD...
 
 ## Notes
-* The input datasets can be found at [project Gutenberg library's top 100 EBooks last 30 days](https://www.gutenberg.org/browse/scores/top#books-last30), as the rating is dynamic, see input_datasets.txt file that is a snapshot from the rating as for 2022-04-06. Each student picks a dataset/book according to their id in the student list.
+* The input datasets can be found at [project Gutenberg library's top 100 EBooks last 30 days](https://www.gutenberg.org/browse/scores/top#books-last30), as the rating is dynamic, see input_datasets.txt file that is a snapshot from the rating as for 2022-04-06. Each student picks a dataset/book according to their `dataset_id` in [the student list](https://docs.google.com/spreadsheets/d/1B5h6lM6geeOALARq5s0G5nL6MUmSNmSr4P07yjMYY7w/edit?usp=sharing).
 * The student work shall be committed as a separate branch, and PR later will be processed by the teacher, so please put all your code/artifacts into a folder with your full_name
 * The programming language choice is completely up to you, but please don't pick an esolang, spare your teacher's nerves :)
 * Use efficient datastructures, e.g. if a theory claims that the structure takes `m * p bits`, it shall be kept, sure programming language overhead is inevitable.
