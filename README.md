@@ -10,7 +10,7 @@ The input datasets shall be read as a txt file and the words extracted using " ,
 The application shall take next arguments:
 * --input PATH: path to file or folder with a textual file
 * -k NUMBER: number of top frequent element that we are looking for.
-* --parallel: (disabled by default) whether parallelized version algorithm is used: the input dataset is split (manually or automatic) into several partitions and multiple count-min sketches are merged at the end. It is expected that the final result is the same
+* --parallel <CHUNKS>: (disabled by default) whether parallelized version algorithm is used: the input dataset is split (manually or automatic) into several partitions and multiple count-min sketches are merged at the end. It is expected that the final result is the same
 * -m NUM: count-min sketch buffer size
 * -p NUM: number of independent hash functions
 * -c NUM: number of bits per counter, default is 12
