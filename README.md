@@ -41,6 +41,7 @@ The input datasets shall be read as a txt file and the words extracted using " ,
 * The student work shall be committed as a separate branch, and PR later will be processed by the teacher, so please put all your code/artifacts into a folder with your full_name
 * The programming language choice is completely up to you, but please don't pick an esolang, spare your teacher's nerves :)
 * The IDE is also completely your choice, I ask you to not publish IDE specific files, but rely on a widely used build system. For example, if your preferred IDE is the Intellij Idea, you better implement your project with [maven](https://maven.apache.org/) build system, which is natively supported by majority of IDEs for java including the Intellij. And it would be much easier to check how your application runs on a new workstation.
+* [No need to publish compiled binaries to git](https://vegeta2102.medium.com/why-you-should-not-push-binary-files-to-git-and-what-to-do-if-you-do-29f34692cef0)
 * Please provide a requirements section in the Readme file, specifying which tools are needed to run your app, e.g. 'java 8 + mvn 3.0.3' or 'python 3.8.6 + pip 20.2.1'
 * Use efficient datastructures, e.g. if a theory claims that the structure takes `m * p bits`, it shall be kept, sure programming language overhead is inevitable.
 * The result shall be deterministic, i.e. any involved pseudo-randomness shall be manageable - use predefined/hardcoded seeds. If sorting is needed, use a stable version.
