@@ -28,7 +28,7 @@ def get_skip_words(file: io.FileIO) -> list:
     return [line.strip() for line in file.readlines()]
 
 
-class CountMinScetchParser:
+class CountMinSketchParser:
     def __init__(self, frequently, size, hash_func, count, algorithm, ccsv=None, skip_words=None):
         self.frequently = frequently
         self.size = size
@@ -93,7 +93,7 @@ def main():
     if not os.path.exists(parser.input):
         return print(f"File {parser.input} no exists.")
 
-    c = CountMinScetchParser(parser.k, parser.m, parser.p, parser.c, parser.hash, parser.csv, skip_words)
+    c = CountMinSketchParser(parser.k, parser.m, parser.p, parser.c, parser.hash, parser.csv, skip_words)
     c.handle_file(parser.input)
 
 
