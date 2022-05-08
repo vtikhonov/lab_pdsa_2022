@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import argparse
 import hashlib
 import typing
@@ -13,7 +14,7 @@ def create_parser():
     parser = argparse.ArgumentParser(description='K-Top frequency with Count-Min Sketch problem implementation')
     parser.add_argument('--input', type=str, help='Path to file or folder with a textual file', required=True)
     parser.add_argument('--skip-file', type=argparse.FileType('r', encoding="UTF-8"), required=False)
-    parser.add_argument('--parallel', type=str, required=False)
+    parser.add_argument('--parallel', nargs='?', const=True, required=False)
     parser.add_argument('--hash', type=str, required=False,
                         choices=["sha1", "sha224", "sha256", "sha384", "sha512", "md5"])
     parser.add_argument('-k', type=int, help='Number of top frequent element that we are looking for', required=True)
@@ -30,10 +31,10 @@ def get_skip_words(file: io.FileIO) -> list:
 
 class CountMinSketchParser:
     def __init__(self, frequently, size, hash_func, count, algorithm, ccsv=None, skip_words=None):
-        self.frequently = frequently
-        self.size = size
-        self.hash_func = hash_func
-        self.count = count
+        self.frequently = frequently  # k
+        self.size = size  # m
+        self.hash_func = hash_func  # p
+        self.count = count  # c
         self.algorithm = algorithm
         self.skip_words = skip_words
         self.ccsv = ccsv
@@ -63,18 +64,20 @@ class CountMinSketchParser:
             for _ in word_count:
                 print(f"word: {_[0]} | freq_ref: {_[1]}")
 
+        print("*" * 20)
+        for k, v in temp.items():
+            if v == self.frequently:
+                print(f"Element with frequently {self.frequently}: {k}")
+        temp.clear()
+
     def my_hash(self, line):
         if self.algorithm:
             code = hashlib.new(self.algorithm)
             code.update(line.encode("UTF-8"))
-            for i in range(self.hash_func):
-                return int(code.hexdigest(), 16) % self.size
+            return int(code.hexdigest(), 16) % self.size
         else:
             code = str(hash(line)).encode("UTF-8")
-            for i in range(self.hash_func):
-                return int(code, 16) % self.size
-
-        return code
+            return int(code, 16) % self.size
 
     def add(self, x, value=1):
         hash_index = self.my_hash(x)
