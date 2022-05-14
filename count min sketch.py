@@ -11,7 +11,7 @@ class My_Hash:
 
     def getHashValue(self, character):
         hash_val = hash(character)
-        if (hash_val < 0):
+        if (hash_val <0):
             hash_val = abs(hash_val)
         return ((((hash_val % limit_size) * self.prime) % limit_size) * self.odd) % limit_size
 
