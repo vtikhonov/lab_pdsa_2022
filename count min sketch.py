@@ -3,6 +3,7 @@ import numpy as np
 import re
 limit_size = 1000
 
+
 class My_Hash:
     def __init__(self, prime_number, odd_number):
         self.prime = prime_number
