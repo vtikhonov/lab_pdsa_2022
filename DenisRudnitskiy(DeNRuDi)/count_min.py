@@ -1,4 +1,3 @@
-import multiprocessing as mp
 import argparse
 import hashlib
 import typing
@@ -38,7 +37,22 @@ class CountMinSketchParser:
         self.algorithm = algorithm
         self.skip_words = skip_words
         self.ccsv = ccsv
-        self.backet = [array.array("i", (0 for _ in range(self.size))) for _ in range(self.hash_func)]
+        self.backet = [array.array(self.get_size(), (0 for _ in range(self.size))) for _ in range(self.hash_func)]
+
+    def get_size(self):
+        """
+        Я пробовал bitarray, но он подходит только для записи 0 или 1.
+        Соответсвтенно, нужно результат записать в массив, и при следущем +1 - нужно извелчь данные,
+        затем перевести в 10 с. счисления, после этого очистить массив, и записать в 2 с. счисления в него результат.
+        На практике проверил, что это дает существенную просадку по времени. Других вариантов я не вижу и не знаю,
+        поэтому ниже более логичное решение:)
+        """
+        if self.count <= 8:
+            return "B"
+        elif self.count <= 16:
+            return "I"
+        else:
+            return "L"
 
     def handle_file(self, path: str):
         temp: typing.Dict[str, int] = {}
