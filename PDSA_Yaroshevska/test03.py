@@ -20,9 +20,9 @@ unique.sort()
 max_word1 = ''; max_word2 = ''; max_word3 = ''; max_word4 = ''; max_word5 = ''
 max_count1 = 0; max_count2 = 0; max_count3 = 0; max_count4 = 0; max_count5 = 0
 
-skiplist = ["the", "a", "i", "we", "you", "they", "he", "she", "me", "us", "them", "him", "her", "and", "of", "his",
-            "to", "in", "was", "were", "has", "had", "have", "that", "this", "those", "with", "it", "as", "for", "at",
-            "which", "mr", "mrs", "by", "on", "be", "but"]
+skiptext_file = open('skip_words_new.txt', 'r', encoding='UTF-8')
+skiptext = skiptext_file.read()
+skiplist = skiptext.split()
 
 for i in range(len(unique)):
     if unique[i] not in skiplist:
@@ -64,4 +64,3 @@ print(max_count2, max_word2)
 print(max_count3, max_word3)
 print(max_count4, max_word4)
 print(max_count5, max_word5)
-# print(words.count('a'))
