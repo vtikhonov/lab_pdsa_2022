@@ -125,4 +125,10 @@ if __name__ == '__main__':
                                       input_words=input_words)
     top_k_words = count_min_sketch.get_top(params.k)
     print(f'Top {params.k} words:')
-    print(tabulate(top_k_words))
+    top_k_words_table = tabulate(top_k_words)
+    print(top_k_words_table)
+
+    if params.output:
+        with open(params.output, 'w') as output_file:
+            output_file.write(top_k_words_table)
+        print(f'Written to {params.output}')
