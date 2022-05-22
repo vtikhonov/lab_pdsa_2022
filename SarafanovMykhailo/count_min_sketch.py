@@ -1,5 +1,23 @@
 '''
-K-Top frequency with Count-Min Sketch problem implementation on Python
+K-Top frequency problem with Count-Min Sketch implementation on Python
+
+This script implementes Count-Min Sketch algorithm for solving problem of
+getting top K frequent words in the datasteam.
+
+You can import class for your own usage or use this script. You can use the
+following cmd flags for test:
+--input path to input file with words
+-k number of top elements to find
+-p number of independent hash funcs to use. Functions are being created with
+    randomized args
+-m buffer size for all possible options. Defaults to 1000
+--parallel run in parrallel mode using Python mulltiprocessing. All available
+    cores will be used
+--output path where top K words will be saved. Words will be printed on stdout
+    anyway.
+
+Please note that some words will be skipped. The list of words to skip is in
+the skip_words.txt file
 
 Author: Sarafanov Mykhailo, AI-171
 '''
