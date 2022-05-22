@@ -177,17 +177,15 @@ if __name__ == '__main__':
             freqs = pool.map(packed_func, words_split)
         merged_freqs = __merge_frequences(freqs)
         top_k_words = merged_freqs[-params.k:]
-        print(f'Top {params.k} words:')
-        print(tabulate(top_k_words))
     else:
         print('Running in single-thread mode')
         count_min_sketch = CountMinSketch(hash_funcs,
                                           input_words=input_words,
                                           buffer_size=params.m)
         top_k_words = count_min_sketch.get_top(params.k)
-        print(f'Top {params.k} words:')
-        top_k_words_table = tabulate(top_k_words)
-        print(top_k_words_table)
+    print(f'Top {params.k} words:')
+    top_k_words_table = tabulate(top_k_words)
+    print(top_k_words_table)
 
     if params.output:
         with open(params.output, 'w') as output_file:
