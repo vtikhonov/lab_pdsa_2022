@@ -60,7 +60,7 @@ class HashFunc:
 
     @staticmethod
     def randomize(buffer_size=DEFAULT_BUFFER_SIZE, hasher=None):
-        return HashFunc(randint(100), randint(100), buffer_size, hasher)
+        return HashFunc(randint(2, 100), randint(2, 100), buffer_size, hasher)
 
 
 class CountMinSketch():
