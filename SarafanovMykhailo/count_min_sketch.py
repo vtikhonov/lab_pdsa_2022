@@ -6,6 +6,8 @@ Author: Sarafanov Mykhailo, AI-171
 __all__ = ['HashFunc', 'CountMinSketch', 'read_words']
 
 from argparse import ArgumentParser
+from functools import partial
+from multiprocessing import Pool, cpu_count
 from random import randrange as randint
 from re import sub
 
@@ -47,8 +49,8 @@ class CountMinSketch():
 
     def __init__(self,
                  hash_funcs,
-                 buffer_size=DEFAULT_BUFFER_SIZE,
-                 input_words=[]):
+                 input_words=[],
+                 buffer_size=DEFAULT_BUFFER_SIZE):
         self.hash_funcs = hash_funcs
         self.buffer_size = buffer_size
         if input_words:
@@ -110,8 +112,32 @@ def __process_args():
                              help='buffer size. Defaults to ' +
                              str(DEFAULT_BUFFER_SIZE),
                              default=DEFAULT_BUFFER_SIZE)
+    args_parser.add_argument('--parallel',
+                             action='store_true',
+                             help=('running in parallel mode using '
+                                   'multiprocessing. Disabled by defaut'),
+                             default=False)
     args_parser.add_argument('--output', type=str, required=False)
     return args_parser.parse_args()
+
+
+def __get_frequences(words_chunk, hash_funcs, buffer_size):
+    return CountMinSketch(hash_funcs, words_chunk, buffer_size).frequences
+
+
+def __merge_frequences(frequences):
+    combined_frequences = []
+    added_words = {}
+    for chunk in frequences:
+        for word in chunk:
+            if word[1] in added_words.keys():
+                word_idx = added_words[word[1]]
+                combined_frequences[word_idx][0] += word[0]
+            else:
+                combined_frequences.append(word)
+                added_words[word[1]] = len(combined_frequences)
+    combined_frequences.sort()
+    return combined_frequences
 
 
 if __name__ == '__main__':
@@ -120,13 +146,30 @@ if __name__ == '__main__':
     input_words = read_words(params.input)
     hash_funcs = [HashFunc.randomize() for _ in range(params.p)]
 
-    count_min_sketch = CountMinSketch(hash_funcs,
-                                      buffer_size=params.m,
-                                      input_words=input_words)
-    top_k_words = count_min_sketch.get_top(params.k)
-    print(f'Top {params.k} words:')
-    top_k_words_table = tabulate(top_k_words)
-    print(top_k_words_table)
+    top_k_words = None
+    if params.parallel:
+        cpus = cpu_count()
+        print(f'Running in parallel mode (using {cpus} cpus)')
+        words_split = [input_words[i::cpus] for i in range(0, cpus)]
+
+        with Pool(cpus) as pool:
+            packed_func = partial(__get_frequences,
+                                  hash_funcs=hash_funcs,
+                                  buffer_size=params.m)
+            freqs = pool.map(packed_func, words_split)
+        merged_freqs = __merge_frequences(freqs)
+        top_k_words = merged_freqs[-params.k:]
+        print(f'Top {params.k} words:')
+        print(tabulate(top_k_words))
+    else:
+        print('Running in single-thread mode')
+        count_min_sketch = CountMinSketch(hash_funcs,
+                                          input_words=input_words,
+                                          buffer_size=params.m)
+        top_k_words = count_min_sketch.get_top(params.k)
+        print(f'Top {params.k} words:')
+        top_k_words_table = tabulate(top_k_words)
+        print(top_k_words_table)
 
     if params.output:
         with open(params.output, 'w') as output_file:
