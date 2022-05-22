@@ -28,6 +28,7 @@ from functools import partial
 from multiprocessing import Pool, cpu_count
 from random import randrange as randint
 from re import sub
+from time import time
 
 from tabulate import tabulate
 
@@ -165,6 +166,7 @@ if __name__ == '__main__':
     hash_funcs = [HashFunc.randomize() for _ in range(params.p)]
 
     top_k_words = None
+    start_time = time()
     if params.parallel:
         cpus = cpu_count()
         print(f'Running in parallel mode (using {cpus} cpus)')
@@ -183,9 +185,11 @@ if __name__ == '__main__':
                                           input_words=input_words,
                                           buffer_size=params.m)
         top_k_words = count_min_sketch.get_top(params.k)
+    exec_time = time() - start_time
     print(f'Top {params.k} words:')
     top_k_words_table = tabulate(top_k_words)
     print(top_k_words_table)
+    print(f'Calculation time: {round(exec_time)}s')
 
     if params.output:
         with open(params.output, 'w') as output_file:
