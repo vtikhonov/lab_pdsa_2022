@@ -160,7 +160,7 @@ def __merge_frequences(frequences):
 
 if __name__ == '__main__':
     params = __process_args()
-    __init_skipwords('./skip_words.txt')
+    __init_skipwords('./../skip_words.txt')
     input_words = read_words(params.input)
     hash_funcs = [HashFunc.randomize() for _ in range(params.p)]
 
