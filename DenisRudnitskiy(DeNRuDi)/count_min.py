@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import argparse
 import hashlib
 import typing
@@ -29,6 +30,8 @@ def get_skip_words(file: io.FileIO) -> list:
 
 
 class CountMinSketchParser:
+    __slots__ = ["frequently", "size", "hash_func", "count", "algorithm", "skip_words", "ccsv", "backet"]
+
     def __init__(self, frequently, size, hash_func, count, algorithm, ccsv=None, skip_words=None):
         self.frequently = frequently  # k
         self.size = size  # m
@@ -39,14 +42,19 @@ class CountMinSketchParser:
         self.ccsv = ccsv
         self.backet = [array.array(self.get_size(), (0 for _ in range(self.size))) for _ in range(self.hash_func)]
 
+    def bitint(self, number: int, bit=False):
+        """Реализовал чуть-чуть проще, без сдвигов и логических операций. Это даст небольшую задержку по
+        сравнению с логическим операциями, но результат от этого не меняется.
+        """
+        bits = format(number, "b")
+        result = "0" * (self.count - len(bits)) + bits
+        if len(result) > self.count:
+            raise ValueError(
+                f"Amount bit ({len(result)}) in number {int(result, 2)}: b{result} exceeded the specified "
+                f"value ({self.count}) of bits.")
+        return result if bit else int(result, 2)
+
     def get_size(self):
-        """
-        Я пробовал bitarray, но он подходит только для записи 0 или 1.
-        Соответсвтенно, нужно результат записать в массив, и при следущем +1 - нужно извелчь данные,
-        затем перевести в 10 с. счисления, после этого очистить массив, и записать в 2 с. счисления в него результат.
-        На практике проверил, что это дает существенную просадку по времени. Других вариантов я не вижу и не знаю,
-        поэтому ниже более логичное решение:)
-        """
         if self.count <= 8:
             return "B"
         elif self.count <= 16:
@@ -97,6 +105,7 @@ class CountMinSketchParser:
         hash_index = self.my_hash(x)
         for i in range(len(self.backet)):
             self.backet[i][hash_index] += value
+            self.bitint(self.backet[i][hash_index])
 
     def get(self, x):
         hash_index = self.my_hash(x)
@@ -112,6 +121,8 @@ def main():
 
     c = CountMinSketchParser(parser.k, parser.m, parser.p, parser.c, parser.hash, parser.csv, skip_words)
     c.handle_file(parser.input)
+    # при реализации параллельности у меня пока что не сходятся результаты с единичным потоком, но
+    # скорость выросла почти в 2 раза:)
 
 
 if __name__ == '__main__':
