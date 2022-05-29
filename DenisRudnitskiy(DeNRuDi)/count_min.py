@@ -121,8 +121,6 @@ def main():
 
     c = CountMinSketchParser(parser.k, parser.m, parser.p, parser.c, parser.hash, parser.csv, skip_words)
     c.handle_file(parser.input)
-    # при реализации параллельности у меня пока что не сходятся результаты с единичным потоком, но
-    # скорость выросла почти в 2 раза:)
 
 
 if __name__ == '__main__':
