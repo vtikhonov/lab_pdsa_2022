@@ -30,7 +30,6 @@ with open("oz.txt", "r") as oz:
 
 h1 = HashFunction(11, 9)
 h2 = HashFunction(17, 15)
-# h2 = HashFunction(149, 51)
 h3 = HashFunction(31, 29)
 h4 = HashFunction(61, 59)
 
@@ -48,9 +47,10 @@ for word in arr:
     for i in range(hash_len):
         sketch[i, hashes[i]] += 1
 
+word = arr[33]
 print(sketch)
-print(arr[33])
-hashes = [i.getHashValue(arr[33]) for i in hash_functions]
+print(word)
+hashes = [i.getHashValue(word) for i in hash_functions]
 result = []
 for i in range(hash_len):
     result.append(sketch[i, hashes[i]])
@@ -58,7 +58,7 @@ print(result)
 
 count = 0
 for i in arr:
-    if i == arr[33]:
+    if i == word:
         count += 1
 print(count)
 
