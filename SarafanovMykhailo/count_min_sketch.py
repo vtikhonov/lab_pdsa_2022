@@ -26,7 +26,7 @@ __all__ = ['HashFunc', 'CountMinSketch', 'read_words']
 from argparse import ArgumentParser
 from functools import partial
 from multiprocessing import Pool, cpu_count
-from random import randrange as randint
+from random import randint, seed
 from re import sub
 from time import time
 
@@ -39,29 +39,23 @@ skipwords = []
 class HashFunc:
 
     def __init__(self,
-                 prime_number,
-                 odd_number,
+                 a,
+                 b,
+                 p,
                  buffer_size=DEFAULT_BUFFER_SIZE,
-                 hasher=None):
-        self.prime = prime_number
-        self.odd = odd_number
+                 hash_algo=None):
+        self.a = a
+        self.b = b
+        self.p = p
         self.buffer_size = buffer_size
-        if hasher is not None:
-            self.hasher = hasher
+        if hash_algo is not None:
+            self.hasher = hash_algo
         else:
             self.hasher = hash
 
     def get_hashed(self, text):
-        hash_val = self.hasher(text)
-        if (hash_val < 0):
-            hash_val = abs(hash_val)
-        return ((((
-            (hash_val % self.buffer_size) * self.prime) % self.buffer_size) *
-                 self.odd) % self.buffer_size)
-
-    @staticmethod
-    def randomize(buffer_size=DEFAULT_BUFFER_SIZE, hasher=None):
-        return HashFunc(randint(2, 100), randint(2, 100), buffer_size, hasher)
+        hashed = abs(self.hasher(text))
+        return (((self.a * hashed + self.b) % self.p) % self.buffer_size)
 
 
 class CountMinSketch():
@@ -101,6 +95,12 @@ class CountMinSketch():
     def get_top_n_freqs(freqs, n):
         return sorted(list(map(list, freqs.items())), key=lambda x: x[1])[-n:]
 
+
+def __get_mercen_primes(n):
+    primes = []
+    for _ in range(n):
+        primes.append(2**randint(2, 10) - 1)
+    return primes
 
 
 def __init_skipwords(skipwords_path):
@@ -165,10 +165,15 @@ def __merge_frequences(frequences):
 
 
 if __name__ == '__main__':
+    seed(1000)
     params = __process_args()
-    __init_skipwords('./../skip_words.txt')
+    __init_skipwords('./skip_words.txt')
     input_words = read_words(params.input)
-    hash_funcs = [HashFunc.randomize() for _ in range(params.p)]
+    primes = __get_mercen_primes(params.p)
+    hash_funcs = [
+        HashFunc(randint(2, 1000), randint(2, 1000), primes[i])
+        for i in range(params.p)
+    ]
 
     top_k_words = None
     start_time = time()
