@@ -76,22 +76,31 @@ class CountMinSketch():
             self.fill_sketch(input_words)
         else:
             self.sketch = [0 for _ in enumerate(self.hash_funcs)]
-            self.frequences = []
+            self.frequences = {}
 
     def fill_sketch(self, input_words):
         self.sketch = [[0 for _ in range(self.buffer_size)]
                        for __ in enumerate(self.hash_funcs)]
-        self.frequences = []
+        self.frequences = {}
         for word in input_words:
             hashes = [x.get_hashed(word) for x in self.hash_funcs]
+            counts = []
             for x, _ in enumerate(self.hash_funcs):
                 self.sketch[x][hashes[x]] += 1
-                if [min(hashes), word] not in self.frequences:
-                    self.frequences.append([min(hashes), word])
-        self.frequences.sort()
+                counts.append(self.sketch[x][hashes[x]])
+            min_hash_cnt = min(counts)
+            present = (word in self.frequences.keys())
+            if ((present and self.frequences[word] < min_hash_cnt)
+                    or (not present)):
+                self.frequences[word] = min_hash_cnt
 
     def get_top(self, n):
-        return self.frequences[-n:]
+        return CountMinSketch.get_top_n_freqs(self.frequences, n)
+
+    @staticmethod
+    def get_top_n_freqs(freqs, n):
+        return sorted(list(map(list, freqs.items())), key=lambda x: x[1])[-n:]
+
 
 
 def __init_skipwords(skipwords_path):
@@ -145,18 +154,14 @@ def __get_frequences(words_chunk, hash_funcs, buffer_size):
 
 
 def __merge_frequences(frequences):
-    combined_frequences = []
-    added_words = {}
-    for chunk in frequences:
-        for word in chunk:
-            if word[1] in added_words.keys():
-                word_idx = added_words[word[1]]
-                combined_frequences[word_idx][0] += word[0]
+    merged = {}
+    for freqs_chunk in frequences:
+        for word, hashes_cnt in freqs_chunk.items():
+            if word in merged.items():
+                merged[word] += hashes_cnt
             else:
-                combined_frequences.append(word)
-                added_words[word[1]] = len(combined_frequences)
-    combined_frequences.sort()
-    return combined_frequences
+                merged[word] = hashes_cnt
+    return merged
 
 
 if __name__ == '__main__':
@@ -178,7 +183,7 @@ if __name__ == '__main__':
                                   buffer_size=params.m)
             freqs = pool.map(packed_func, words_split)
         merged_freqs = __merge_frequences(freqs)
-        top_k_words = merged_freqs[-params.k:]
+        top_k_words = CountMinSketch.get_top_n_freqs(merged_freqs, params.k)
     else:
         print('Running in single-thread mode')
         count_min_sketch = CountMinSketch(hash_funcs,
