@@ -168,7 +168,7 @@ def __process_args():
     args_parser.add_argument('--input',
                              type=str,
                              required=True,
-                             help='path to file or folder with a textual file')
+                             help='path to file or folder with a text file')
     args_parser.add_argument('-k',
                              type=int,
                              required=True,
@@ -196,6 +196,10 @@ def __process_args():
                              ', '.join(hashlib.algorithms_guaranteed) +
                              '. Python hash is used by default')
 
+    args_parser.add_argument('--output',
+                             type=str,
+                             required=False,
+                             help='path to file to write top k words')
     # TODO: Implement setting different hash algorithms as base
     return args_parser.parse_args()
 
