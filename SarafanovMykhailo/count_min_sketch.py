@@ -34,10 +34,11 @@ from random import randint, seed
 from re import sub
 from time import time
 
-from numpy import uint32, zeros
+from numpy import uint8, uint16, uint32, uint64, zeros
 from tabulate import tabulate
 
 DEFAULT_BUFFER_SIZE = 1_000
+DEFAULT_CELL_SIZE = 12
 skipwords = []
 
 
@@ -102,26 +103,41 @@ class CountMinSketch():
                  hash_funcs,
                  k_count,
                  input_words=[],
+                 cell_size=DEFAULT_CELL_SIZE,
                  buffer_size=DEFAULT_BUFFER_SIZE):
         self.hash_funcs = hash_funcs
         if not k_count:
             raise CountMinSketchError('Top k count must be specified')
         self.k_count = k_count
         self.buffer_size = buffer_size
+        self.cell_size = cell_size
+        if cell_size <= 8:
+            cell_type = uint8
+        elif cell_size <= 16:
+            cell_type = uint16
+        elif cell_size <= 32:
+            cell_type = uint32
+        elif cell_size <= 64:
+            cell_type = uint64
+        else:
+            raise CountMinSketchError(f'Cells of {cell_size} bits are not '
+                                      'supported')
         self.sketch = zeros(shape=(len(self.hash_funcs), self.buffer_size),
-                            dtype=uint32)
+                            dtype=cell_type)
         self.frequences = {}
         if input_words:
             self.fill_sketch(input_words)
 
-    # TODO: Add configurable cell size using bitarray
-    # TODO: Use array instead of list for sketch base
     def fill_sketch(self, input_words):
         for word in input_words:
             hashes = [x.get_hashed(word) for x in self.hash_funcs]
             counts = []
             for x, _ in enumerate(self.hash_funcs):
-                self.sketch[x][hashes[x]] += 1
+                cnt_updated = self.sketch[x][hashes[x]] + 1
+                if len(bin(int(cnt_updated))) - 2 > self.cell_size:
+                    raise CountMinSketchError('Counter exceeds cell size: ' +
+                                              str(self.cell_size) + ' bits')
+                self.sketch[x][hashes[x]] = cnt_updated
                 counts.append(self.sketch[x][hashes[x]])
             min_hash_cnt = min(counts)
             present = (word in self.frequences.keys())
@@ -193,7 +209,12 @@ def __process_args():
                              'creating hashfuncs family. Supported: ' +
                              ', '.join(hashlib.algorithms_guaranteed) +
                              '. Python hash is used by default')
-
+    args_parser.add_argument('-c',
+                             type=int,
+                             required=False,
+                             default=DEFAULT_CELL_SIZE,
+                             help='Counter bits size limit. Defaults to ' +
+                             str(DEFAULT_CELL_SIZE))
     args_parser.add_argument('--output',
                              type=str,
                              required=False,
@@ -201,8 +222,9 @@ def __process_args():
     return args_parser.parse_args()
 
 
-def __get_frequences(words_chunk, hash_funcs, k_count, buffer_size):
-    return CountMinSketch(hash_funcs, k_count, words_chunk, buffer_size).frequences
+def __get_frequences(words_chunk, hash_funcs, k_count, cell_size, buffer_size):
+    return CountMinSketch(hash_funcs, k_count, words_chunk, cell_size,
+                          buffer_size).frequences
 
 
 def __merge_frequences(frequences):
@@ -240,6 +262,7 @@ if __name__ == '__main__':
             packed_func = partial(__get_frequences,
                                   hash_funcs=hash_funcs,
                                   k_count=params.k,
+                                  cell_size=params.c,
                                   buffer_size=params.m)
             freqs = pool.map(packed_func, words_split)
         merged_freqs = __merge_frequences(freqs)
@@ -249,6 +272,7 @@ if __name__ == '__main__':
         count_min_sketch = CountMinSketch(hash_funcs,
                                           params.k,
                                           input_words=input_words,
+                                          cell_size=params.c,
                                           buffer_size=params.m)
         top_k_words = list(count_min_sketch.frequences.items())
     exec_time = time() - start_time
