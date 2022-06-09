@@ -188,7 +188,14 @@ def __process_args():
                              help=('running in parallel mode using '
                                    'multiprocessing. Disabled by defaut'),
                              default=False)
-    args_parser.add_argument('--output', type=str, required=False)
+    args_parser.add_argument('--hash',
+                             type=str,
+                             required=False,
+                             help='custom hash algorithm to use as base for ' +
+                             'creating hashfuncs family. Supported: ' +
+                             ', '.join(hashlib.algorithms_guaranteed) +
+                             '. Python hash is used by default')
+
     # TODO: Implement setting different hash algorithms as base
     return args_parser.parse_args()
 
@@ -215,8 +222,10 @@ if __name__ == '__main__':
     input_words = read_words(params.input)
     primes = __get_mercen_primes(params.p)
     hash_funcs = [
-        HashFunc(randint(2, 1000), randint(2, 1000), primes[i])
-        for i in range(params.p)
+        HashFunc(randint(2, 1000),
+                 randint(2, 1000),
+                 primes[i],
+                 hash_algo=params.hash) for i in range(params.p)
     ]
 
     top_k_words = None
