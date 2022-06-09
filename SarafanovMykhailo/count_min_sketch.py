@@ -195,7 +195,7 @@ def __merge_frequences(frequences):
     merged = {}
     for freqs_chunk in frequences:
         for word, hashes_cnt in freqs_chunk.items():
-            if word in merged.items():
+            if word in merged.keys():
                 merged[word] += hashes_cnt
             else:
                 merged[word] = hashes_cnt
