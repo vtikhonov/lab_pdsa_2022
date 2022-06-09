@@ -34,6 +34,7 @@ from random import randint, seed
 from re import sub
 from time import time
 
+from numpy import uint32, zeros
 from tabulate import tabulate
 
 DEFAULT_BUFFER_SIZE = 1_000
@@ -107,18 +108,15 @@ class CountMinSketch():
             raise CountMinSketchError('Top k count must be specified')
         self.k_count = k_count
         self.buffer_size = buffer_size
+        self.sketch = zeros(shape=(len(self.hash_funcs), self.buffer_size),
+                            dtype=uint32)
+        self.frequences = {}
         if input_words:
             self.fill_sketch(input_words)
-        else:
-            self.sketch = [0 for _ in enumerate(self.hash_funcs)]
-            self.frequences = {}
 
     # TODO: Add configurable cell size using bitarray
     # TODO: Use array instead of list for sketch base
     def fill_sketch(self, input_words):
-        self.sketch = [[0 for _ in range(self.buffer_size)]
-                       for __ in enumerate(self.hash_funcs)]
-        self.frequences = {}
         for word in input_words:
             hashes = [x.get_hashed(word) for x in self.hash_funcs]
             counts = []
