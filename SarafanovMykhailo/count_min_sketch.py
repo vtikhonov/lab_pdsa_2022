@@ -21,7 +21,10 @@ the skip_words.txt file
 
 Author: Sarafanov Mykhailo, AI-171
 '''
-__all__ = ['HashFunc', 'HasherError', 'CountMinSketch', 'read_words']
+__all__ = [
+    'HashFunc', 'HasherError', 'CountMinSketch', 'CountMinSketchError',
+    'read_words'
+]
 
 import hashlib
 from argparse import ArgumentParser
@@ -110,6 +113,8 @@ class CountMinSketch():
             self.sketch = [0 for _ in enumerate(self.hash_funcs)]
             self.frequences = {}
 
+    # TODO: Add configurable cell size using bitarray
+    # TODO: Use array instead of list for sketch base
     def fill_sketch(self, input_words):
         self.sketch = [[0 for _ in range(self.buffer_size)]
                        for __ in enumerate(self.hash_funcs)]
@@ -184,6 +189,7 @@ def __process_args():
                                    'multiprocessing. Disabled by defaut'),
                              default=False)
     args_parser.add_argument('--output', type=str, required=False)
+    # TODO: Implement setting different hash algorithms as base
     return args_parser.parse_args()
 
 
@@ -236,6 +242,7 @@ if __name__ == '__main__':
                                           buffer_size=params.m)
         top_k_words = list(count_min_sketch.frequences.items())
     exec_time = time() - start_time
+    # TODO: Add error calculation and pretty stats table
     print(f'Top {params.k} words:')
     top_k_words_table = tabulate(top_k_words)
     print(top_k_words_table)
