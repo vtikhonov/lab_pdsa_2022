@@ -200,7 +200,6 @@ def __process_args():
                              type=str,
                              required=False,
                              help='path to file to write top k words')
-    # TODO: Implement setting different hash algorithms as base
     return args_parser.parse_args()
 
 
