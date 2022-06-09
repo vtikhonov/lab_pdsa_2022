@@ -41,6 +41,10 @@ class HasherError(Exception):
     pass
 
 
+class CountMinSketchError(Exception):
+    pass
+
+
 class HashFunc:
 
     def __init__(self,
@@ -92,9 +96,13 @@ class CountMinSketch():
 
     def __init__(self,
                  hash_funcs,
+                 k_count,
                  input_words=[],
                  buffer_size=DEFAULT_BUFFER_SIZE):
         self.hash_funcs = hash_funcs
+        if not k_count:
+            raise CountMinSketchError('Top k count must be specified')
+        self.k_count = k_count
         self.buffer_size = buffer_size
         if input_words:
             self.fill_sketch(input_words)
@@ -117,13 +125,13 @@ class CountMinSketch():
             if ((present and self.frequences[word] < min_hash_cnt)
                     or (not present)):
                 self.frequences[word] = min_hash_cnt
-
-    def get_top(self, n):
-        return CountMinSketch.get_top_n_freqs(self.frequences, n)
+            if len(self.frequences) > self.k_count:
+                self.frequences = CountMinSketch.sort_dict(self.frequences)
+                self.frequences.popitem()
 
     @staticmethod
-    def get_top_n_freqs(freqs, n):
-        return sorted(list(map(list, freqs.items())), key=lambda x: x[1])[-n:]
+    def sort_dict(dct):
+        return {k: v for k, v in sorted(dct.items(), key=lambda x: x[1], reverse=True)}
 
 
 def __get_mercen_primes(n):
@@ -179,8 +187,8 @@ def __process_args():
     return args_parser.parse_args()
 
 
-def __get_frequences(words_chunk, hash_funcs, buffer_size):
-    return CountMinSketch(hash_funcs, words_chunk, buffer_size).frequences
+def __get_frequences(words_chunk, hash_funcs, k_count, buffer_size):
+    return CountMinSketch(hash_funcs, k_count, words_chunk, buffer_size).frequences
 
 
 def __merge_frequences(frequences):
@@ -215,16 +223,18 @@ if __name__ == '__main__':
         with Pool(cpus) as pool:
             packed_func = partial(__get_frequences,
                                   hash_funcs=hash_funcs,
+                                  k_count=params.k,
                                   buffer_size=params.m)
             freqs = pool.map(packed_func, words_split)
         merged_freqs = __merge_frequences(freqs)
-        top_k_words = CountMinSketch.get_top_n_freqs(merged_freqs, params.k)
+        top_k_words = list(CountMinSketch.sort_dict(merged_freqs).items())[:params.k]
     else:
         print('Running in single-thread mode')
         count_min_sketch = CountMinSketch(hash_funcs,
+                                          params.k,
                                           input_words=input_words,
                                           buffer_size=params.m)
-        top_k_words = count_min_sketch.get_top(params.k)
+        top_k_words = list(count_min_sketch.frequences.items())
     exec_time = time() - start_time
     print(f'Top {params.k} words:')
     top_k_words_table = tabulate(top_k_words)
