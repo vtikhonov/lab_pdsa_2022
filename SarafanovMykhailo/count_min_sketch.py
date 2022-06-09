@@ -21,8 +21,9 @@ the skip_words.txt file
 
 Author: Sarafanov Mykhailo, AI-171
 '''
-__all__ = ['HashFunc', 'CountMinSketch', 'read_words']
+__all__ = ['HashFunc', 'HasherError', 'CountMinSketch', 'read_words']
 
+import hashlib
 from argparse import ArgumentParser
 from functools import partial
 from multiprocessing import Pool, cpu_count
@@ -36,6 +37,10 @@ DEFAULT_BUFFER_SIZE = 1_000
 skipwords = []
 
 
+class HasherError(Exception):
+    pass
+
+
 class HashFunc:
 
     def __init__(self,
@@ -44,18 +49,43 @@ class HashFunc:
                  p,
                  buffer_size=DEFAULT_BUFFER_SIZE,
                  hash_algo=None):
+        """
+        Custom hashing function from family class. Uses implementation of hash
+        functions family proposed by Lawrence Carter and Mark Wegman.
+
+        Args:
+            a (int): some random int
+            b (int): some random int
+            p (int): Merces prime (2**k - 1)
+            buffer_size (int, optional): buffer size to limit hashvalue.
+                Defaults to DEFAULT_BUFFER_SIZE.
+            hash_algo (str, optional): hashing algorithm from hashlib to use as
+                base hasher. Python's default hash() is used if not specified.
+        """
         self.a = a
         self.b = b
         self.p = p
         self.buffer_size = buffer_size
         if hash_algo is not None:
-            self.hasher = hash_algo
+            self.hasher = HashFunc.__get_hashlib_hasher(hash_algo)
         else:
             self.hasher = hash
 
     def get_hashed(self, text):
         hashed = abs(self.hasher(text))
         return (((self.a * hashed + self.b) % self.p) % self.buffer_size)
+
+    @staticmethod
+    def __get_hashlib_hasher(hasher_name):
+        if hasher_name not in hashlib.algorithms_guaranteed:
+            raise HasherError(f'Algorithm {hasher_name} is not implemented')
+        hashlib_func = getattr(hashlib, hasher_name)
+
+        def get_hashed(text):
+            hashed = hashlib_func(text.encode('utf-8')).hexdigest()
+            return int(hashed, 16)
+
+        return get_hashed
 
 
 class CountMinSketch():
