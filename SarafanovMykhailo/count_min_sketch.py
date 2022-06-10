@@ -272,7 +272,7 @@ def __merge_frequences(frequences):
 if __name__ == '__main__':
     seed(1000)
     params = __process_args()
-    __init_skipwords('./skip_words.txt')
+    __init_skipwords('./../skip_words.txt')
     input_words = read_words(params.input)
     primes = __get_mercen_primes(params.p)
     hash_funcs = [
