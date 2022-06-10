@@ -150,7 +150,10 @@ class CountMinSketch():
 
     @staticmethod
     def sort_dict(dct):
-        return {k: v for k, v in sorted(dct.items(), key=lambda x: x[1], reverse=True)}
+        return {
+            k: v
+            for k, v in sorted(dct.items(), key=lambda x: x[1], reverse=True)
+        }
 
 
 def __get_mercen_primes(n):
