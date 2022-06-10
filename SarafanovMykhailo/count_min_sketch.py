@@ -307,7 +307,6 @@ if __name__ == '__main__':
                                           buffer_size=params.m)
         top_k_words = list(count_min_sketch.frequences.items())
     exec_time = time() - start_time
-    # TODO: Add error calculation and pretty stats table
     print(f'Top {params.k} words:')
     top_k_words_table = tabulate(top_k_words)
     print(top_k_words_table)
@@ -317,3 +316,17 @@ if __name__ == '__main__':
         with open(params.output, 'w') as output_file:
             output_file.write(top_k_words_table)
         print(f'Written to {params.output}')
+
+    prob_freqs = {k: v for (k, v) in top_k_words}
+    real_freqs = {k: 0 for k in prob_freqs.keys()}
+    for word in input_words:
+        if word in real_freqs.keys():
+            real_freqs[word] += 1
+
+    err_tbl = [('word', 'freq_ref', 'freq_approx', 'error')]
+    for word, freq_approx in prob_freqs.items():
+        freq_ref = real_freqs[word]
+        err = 100. * abs(freq_approx - freq_ref) / freq_ref
+        err_tbl.append((word, freq_ref, freq_approx, str(round(err, 2)) + '%'))
+    print('\nError calculation:')
+    print(tabulate(err_tbl))
