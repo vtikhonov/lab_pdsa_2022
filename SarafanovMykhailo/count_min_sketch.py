@@ -11,8 +11,12 @@ following cmd flags for test:
 -p number of independent hash funcs to use. Functions are being created with
     randomized args
 -m buffer size for all possible options. Defaults to 1000
+-m cell size for liming counter cell size in bits. Defaults to 12. Will be used
+    for selecting sketch array dtype
 --parallel run in parrallel mode using Python mulltiprocessing. All available
     cores will be used
+--hash hash algorithm to use as base. Python's default hash will be used if not
+    specified
 --output path where top K words will be saved. Words will be printed on stdout
     anyway.
 
@@ -51,17 +55,19 @@ class CountMinSketchError(Exception):
 
 
 class HashFunc:
+    '''
+    Custom hashing function from family class.
 
+    Uses implementation of hash functions family proposed by Lawrence Carter
+    and Mark Wegman.
+    '''
     def __init__(self,
                  a,
                  b,
                  p,
                  buffer_size=DEFAULT_BUFFER_SIZE,
                  hash_algo=None):
-        """
-        Custom hashing function from family class. Uses implementation of hash
-        functions family proposed by Lawrence Carter and Mark Wegman.
-
+        '''
         Args:
             a (int): some random int
             b (int): some random int
@@ -70,7 +76,7 @@ class HashFunc:
                 Defaults to DEFAULT_BUFFER_SIZE.
             hash_algo (str, optional): hashing algorithm from hashlib to use as
                 base hasher. Python's default hash() is used if not specified.
-        """
+        '''
         self.a = a
         self.b = b
         self.p = p
@@ -98,13 +104,35 @@ class HashFunc:
 
 
 class CountMinSketch():
+    '''
+    CountMinSketch implementation for solving top K frequent problem.
 
+    Uses numpy array for sketch storing. Memory usage is being limited by
+    setting buffer size and cell size. Counter type is being selected on cell
+    size limit (in bits). Freqeunces dict is being limited, so k value must
+    be specified. For running algorithm simply add input words or call
+    fill_sketch providing text sequence.
+    '''
     def __init__(self,
                  hash_funcs,
                  k_count,
                  input_words=[],
                  cell_size=DEFAULT_CELL_SIZE,
                  buffer_size=DEFAULT_BUFFER_SIZE):
+        '''
+        Args:
+            hash_funcs (list): list containing family of hash functions to get
+                hash values for words
+            k_count (int): how many top frequent words should be tracked
+            input_words (list): input text sequence to process. Defaults to
+                empty list. If not provided - fill_sketch can be called later
+            cell_size (int): counter cell limit (in bits). Will be used when
+                determining sketch data type. CountMinSketchError will be
+                raised if value exceeds defined cell_size. Defaults to
+                DEFAULT_CELL_SIZE
+            buffer_size (int): sketch buffer size. Must be limited to max hash
+                value. Defaults to DEFAULT_BUFFER_SIZE
+        '''
         self.hash_funcs = hash_funcs
         if not k_count:
             raise CountMinSketchError('Top k count must be specified')
