@@ -162,7 +162,7 @@ class CountMinSketch():
             counts = []
             for x, _ in enumerate(self.hash_funcs):
                 cnt_updated = self.sketch[x][hashes[x]] + 1
-                if len(bin(int(cnt_updated))) - 2 > self.cell_size:
+                if cnt_updated >= 2**self.cell_size:
                     raise CountMinSketchError('Counter exceeds cell size: ' +
                                               str(self.cell_size) + ' bits')
                 self.sketch[x][hashes[x]] = cnt_updated
