@@ -34,7 +34,7 @@ import hashlib
 from argparse import ArgumentParser
 from functools import partial
 from multiprocessing import Pool, cpu_count
-from random import randint, seed
+from random import randint, seed, choice
 from re import sub
 from time import time
 
@@ -43,6 +43,8 @@ from tabulate import tabulate
 
 DEFAULT_BUFFER_SIZE = 1_000
 DEFAULT_CELL_SIZE = 12
+MERCEN_PRIMES = (7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203,
+                 2281, 3217, 1281, 4423, 9689, 9941, 11213, 19937, 21701)
 skipwords = []
 
 
@@ -187,7 +189,7 @@ class CountMinSketch():
 def __get_mercen_primes(n):
     primes = []
     for _ in range(n):
-        primes.append(2**randint(2, 10) - 1)
+        primes.append(choice(MERCEN_PRIMES))
     return primes
 
 
@@ -272,7 +274,7 @@ def __merge_frequences(frequences):
 if __name__ == '__main__':
     seed(1000)
     params = __process_args()
-    __init_skipwords('./../skip_words.txt')
+    __init_skipwords('./skip_words.txt')
     input_words = read_words(params.input)
     primes = __get_mercen_primes(params.p)
     hash_funcs = [
