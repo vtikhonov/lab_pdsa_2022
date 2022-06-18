@@ -1,15 +1,15 @@
 #chosen book is Wuthering Heights by Emily Bronte
 import numpy as np
 import re
-limit_size = 1000
-
+limit_size = 3000
+import pandas as pd
 
 class My_Hash:
     def __init__(self, prime_number, odd_number):
         self.prime = prime_number
         self.odd = odd_number
 
-    def getHashValue(self, character):
+    def getMyHashValue(self, character):
         hash_val = hash(character)
         if (hash_val <0):
             hash_val = abs(hash_val)
@@ -45,49 +45,21 @@ if __name__ == '__main__':
     h10 = My_Hash(149, 103)
 
     hash_functions = [h1, h2, h3, h4, h5, h6, h7, h8, h9, h10]
-    hash_len = len(hash_functions)
+    hash_length = len(hash_functions)
 
-    sketch = np.zeros([hash_len, limit_size])
+    sketch = np.zeros([hash_length, limit_size])
     print(sketch)
     word_freq_list = []
     for word in full_word_list:
-        hashes = [i.getHashValue(word) for i in hash_functions]
-        for i in range(hash_len):
+        hashes = [i.getMyHashValue(word) for i in hash_functions]
+        for i in range(hash_length):
             sketch[i, hashes[i]] += 1
-        if [min(hashes), word] not in word_freq_list:
-            word_freq_list.append([min(hashes), word])
-        # print(hashes)
-    # print(sketch)
-    word_freq_list.sort()
 
-    #for selection multiple top k
-    # k = 5 #top k most frequent word
-    # top_k_list = word_freq_list[-k:]
-    # print(word_freq_list[-k:])
-    #
-    # top_word_list = []
-    # for qty, word in top_k_list:
-    #     print(f"the count min sketch qty for word {word} is {qty}")
-    #     top_word_list.append(word)
-    #
-    # real_top_word_list = []
-    # for element in top_word_list:
-    #     count = 0
-    #     for i in full_word_list:
-    #         if i == element:
-    #             count += 1
-    #     real_top_word_list.append([count, element])
-    # print(real_top_word_list)
-    # for qty, word in real_top_word_list:
-    #     print(f"the real qty for word {word} is {qty}")
-
-
-
-    # for selection of certain word from text
-    selected_word = full_word_list[26] #selecet needed word
-    hashes = [i.getHashValue(selected_word) for i in hash_functions]
+    # for selection of one certain word from text
+    selected_word = "book" #selecet needed word choose from full_word_list- full_word_list[10] for example
+    hashes = [i.getMyHashValue(selected_word) for i in hash_functions]
     result = []
-    for i in range(hash_len):
+    for i in range(hash_length):
         result.append(sketch[i, hashes[i]])
     count = 0
     for i in full_word_list:
@@ -100,4 +72,22 @@ if __name__ == '__main__':
     print(f"Qty according to min sketch of word *{selected_word}* = {min(result)}")
 
     print(f"REAL frequency of word *{selected_word}* = {(count / len(full_word_list)) *100} %")
+
     print(f"Frequency according to min sketch of word *{selected_word}* = {(min(result) / len(full_word_list)) *100} %")
+    print(("Enter k number"))
+    k = int(input())
+    df = pd.DataFrame(data=full_word_list)
+    df = pd.DataFrame(data=df[[0]].value_counts(), columns=["freq_real"])
+    ktop_freg = {}
+    for i in list(set(full_word_list)):
+        hash_results = [k.getMyHashValue(i) for k in hash_functions]
+        result = []
+        for j in range(hash_length):
+            result.append(sketch[j, hash_results[j]])
+        ktop_freg[i] = min(result)
+    for word in set(full_word_list):
+        df.loc[word, "freq_count_min"] = ktop_freg[word]
+
+    df.sort_values(by=["freq_real"], ascending=False)
+    df["error"] = round(abs(df["freq_real"] - df["freq_count_min"])/df["freq_real"]*100, 2)
+    print(df.head(k))
