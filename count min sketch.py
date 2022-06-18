@@ -57,7 +57,7 @@ if __name__ == '__main__':
         if [min(hashes), word] not in word_freq_list:
             word_freq_list.append([min(hashes), word])
         # print(hashes)
-    print(sketch)
+    # print(sketch)
     word_freq_list.sort()
 
     #for selection multiple top k
@@ -84,19 +84,20 @@ if __name__ == '__main__':
 
 
     # for selection of certain word from text
-    selected_word = full_word_list[26]
+    selected_word = full_word_list[26] #selecet needed word
     hashes = [i.getHashValue(selected_word) for i in hash_functions]
     result = []
     for i in range(hash_len):
         result.append(sketch[i, hashes[i]])
-    print("Min sketch final array\n", result)
-    print(f"Qty according to min sketch of word *{selected_word}* = ", min(result))
-
     count = 0
     for i in full_word_list:
         if i == selected_word:
             count += 1
-    print(f"REAL qty of word *{selected_word}* = {count}")
-
+    print("Min sketch final array\n", result)
     print("All words qty = ", len(full_word_list))
-    # print(full_word_list)
+
+    print(f"REAL qty of word *{selected_word}* = {count}")
+    print(f"Qty according to min sketch of word *{selected_word}* = {min(result)}")
+
+    print(f"REAL frequency of word *{selected_word}* = {(count / len(full_word_list)) *100} %")
+    print(f"Frequency according to min sketch of word *{selected_word}* = {(min(result) / len(full_word_list)) *100} %")
