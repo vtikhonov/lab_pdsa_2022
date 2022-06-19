@@ -1,13 +1,19 @@
+from typing import Dict
 import multiprocessing as mp
 import argparse
+import tabulate
 import hashlib
-import typing
+import random
 import array
 import time
 import csv
 import io
 import os
 import re
+
+PRIMES = (7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203,
+          2281, 3217, 1281, 4423, 9689, 9941, 11213, 19937, 21701)
+PATTERN = re.compile(r'[(),.:;!?\n\t\'\\[\]"]')
 
 
 def create_parser():
@@ -29,30 +35,17 @@ def get_skip_words(file: io.FileIO) -> list:
     return [line.strip() for line in file.readlines()]
 
 
-class CountMinSketchParser:
-    __slots__ = ["frequently", "size", "hash_func", "count", "algorithm", "skip_words", "ccsv", "backet"]
+class CountMinSketch:
+    __slots__ = ["frequently", "size", "hash_func", "count", "skip_words", "ccsv", "backet"]
 
-    def __init__(self, frequently, size, hash_func, count, algorithm, ccsv=None, skip_words=None):
+    def __init__(self, frequently, size, hash_func, count, ccsv=None, skip_words=None):
         self.frequently = frequently  # k
         self.size = size  # m
         self.hash_func = hash_func  # p
         self.count = count  # c
-        self.algorithm = algorithm
         self.skip_words = skip_words
         self.ccsv = ccsv
-        self.backet = [array.array(self.get_size(), (0 for _ in range(self.size))) for _ in range(self.hash_func)]
-
-    def bitint(self, number: int, bit=False):
-        """Реализовал чуть-чуть проще, без сдвигов и логических операций. Это даст небольшую задержку по
-        сравнению с логическим операциями, но результат от этого не меняется.
-        """
-        bits = format(number, "b")
-        result = "0" * (self.count - len(bits)) + bits
-        if len(result) > self.count:
-            raise ValueError(
-                f"Amount bit ({len(result)}) in number {int(result, 2)}: b{result} exceeded the specified "
-                f"value ({self.count}) of bits.")
-        return result if bit else int(result, 2)
+        self.backet = [array.array(self.get_size(), (0 for _ in range(self.size))) for _ in range(len(self.hash_func))]
 
     def get_size(self):
         if self.count <= 8:
@@ -62,54 +55,110 @@ class CountMinSketchParser:
         else:
             return "L"
 
-    def handle_file(self, path: str):
-        temp: typing.Dict[str, int] = {}
+    def handle_file(self, path: str) -> None:
+        temp: Dict[str, int] = {}
+        filter_words = []
+
         with open(path, "r", encoding="UTF-8") as file:
             for line in file.readlines():
-                if line not in self.skip_words:
-                    for word in line.split(" "):
-                        filter_word = re.sub(r'[(),.:;!?\n\t\'\\[\]"]', '', word)
-                        if filter_word == "" or filter_word in self.skip_words:
-                            continue
-                        self.add(filter_word)
-                        if not temp.get(filter_word):
-                            temp.update({filter_word: self.get(filter_word)})
+                for word in line.split(" "):
+                    filter_word = re.sub(PATTERN, '', word.lower())
+                    if filter_word in self.skip_words or filter_word == "":
+                        continue
+                    filter_words.append(filter_word)
+                    self.add(filter_word)
+                    temp.update({filter_word: self.get(filter_word)})
 
-        word_count = reversed(sorted(temp.items(), key=lambda item: (item[1], item[0])))
+        self._handle_result(temp, filter_words)
+
+    def handle_parallel_file(self, path: str, cores: int):
+        temp: Dict[str, int] = {}
+        filter_words = []
+
+        with open(path, "r", encoding="UTF-8") as file:
+            raw_text = file.read().lower()
+        for word in raw_text.split():
+            filter_word = re.sub(PATTERN, '', word)
+            if filter_word in self.skip_words:
+                continue
+            filter_words.append(filter_word)
+
+        words_split = [filter_words[i::cores] for i in range(cores)]
+        with mp.Pool(cores) as pool:
+            result = pool.map(self._pre_parallel, words_split)
+        for di in result:
+            for word, count in di.items():
+                if word in temp.keys():
+                    temp[word] += count
+                else:
+                    temp[word] = count
+        self._handle_result(temp, filter_words)
+
+    def _pre_parallel(self, data: list) -> dict:
+        temp: Dict[str, int] = {}
+        for word in data:
+            self.add(word)
+            temp.update({word: self.get(word)})
+        return temp
+
+    def _handle_result(self, data: Dict[str, int], filter_words: list) -> None:
+        word_count = list(reversed(sorted(data.items(), key=lambda item: (item[1], item[0]))))
+
+        freq_approx = {k: v for (k, v) in word_count[:self.frequently]}
+        freq_ref = {k: 0 for k in freq_approx.keys()}
+        for word in filter_words:
+            if word in freq_ref.keys():
+                freq_ref[word] += 1
+
+        table = [('word', 'freq_ref', 'freq_approx', 'error')]
+        for word, count in freq_approx.items():
+            freq = freq_ref.get(word)
+            err = f"{round(100 * abs(count - freq) / freq, 2)}%"
+            table.append((word, freq, count, err))
+
+        print(tabulate.tabulate(table))
+
         if self.ccsv:
             with open("output.csv", "w", encoding="UTF-8", newline='') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=['word', 'freq_ref'])
-                for _ in word_count:
-                    writer.writerow({'word': _[0], 'freq_ref': _[1]})
+                writer = csv.DictWriter(csvfile, fieldnames=['word', 'freq_ref', 'freq_approx', 'error'], delimiter='|')
+
+                table.pop(0)
+                for r in table:
+                    writer.writerow({'word': r[0], 'freq_ref': r[1], 'freq_approx': r[2], 'error': r[3]})
                 print("The result is written to a file output.csv")
-        else:
-            for _ in word_count:
-                print(f"word: {_[0]} | freq_ref: {_[1]}")
 
-        print("*" * 20)
-        for k, v in temp.items():
-            if v == self.frequently:
-                print(f"Element with frequently {self.frequently}: {k}")
-        temp.clear()
-
-    def my_hash(self, line):
-        if self.algorithm:
-            code = hashlib.new(self.algorithm)
-            code.update(line.encode("UTF-8"))
-            return int(code.hexdigest(), 16) % self.size
-        else:
-            code = str(hash(line)).encode("UTF-8")
-            return int(code, 16) % self.size
+        data.clear()
 
     def add(self, x, value=1):
-        hash_index = self.my_hash(x)
-        for i in range(len(self.backet)):
-            self.backet[i][hash_index] += value
-            self.bitint(self.backet[i][hash_index])
+        hash_indexes = [i.get_hashed(x) for i in self.hash_func]
+        for j in range(len(self.hash_func)):
+            self.backet[j][hash_indexes[j]] += value
+            result = self.backet[j][hash_indexes[j]]
+            if result >= 2 ** self.count:
+                raise ValueError(
+                    f"Amount bits ({format(result, 'b')}) in number {result} exceeded the specified "
+                    f"value ({self.count}) of bits.")
 
     def get(self, x):
-        hash_index = self.my_hash(x)
-        return min(self.backet[i][hash_index] for i in range(len(self.backet)))
+        hash_indexes = [i.get_hashed(x) for i in self.hash_func]
+        return min([self.backet[i][hash_indexes[i]] for i in range(len(self.hash_func))])
+
+
+class HashFunc:
+    def __init__(self, a, b, p, hash_algo=None, buffer=1000):
+        self.a = a
+        self.b = b
+        self.p = p
+        self.buffer_size = buffer
+
+        self.hasher = hash_algo
+
+    def get_hashed(self, text: str):
+        if self.hasher:
+            hashed = int(getattr(hashlib, self.hasher)(text.encode("UTF-8")).hexdigest(), 16)
+        else:
+            hashed = abs(hash(text))
+        return ((self.a * hashed + self.b) % self.p) % self.buffer_size
 
 
 def main():
@@ -117,10 +166,20 @@ def main():
     skip_words: list = get_skip_words(parser.skip_file) if parser.skip_file else []
 
     if not os.path.exists(parser.input):
-        return print(f"File {parser.input} no exists.")
-
-    c = CountMinSketchParser(parser.k, parser.m, parser.p, parser.c, parser.hash, parser.csv, skip_words)
-    c.handle_file(parser.input)
+        print(f"File {parser.input} no exists.")
+        return exit(-1)
+    hash_funcs = [
+        HashFunc(random.randint(2, 1000), random.randint(2, 1000),
+                 [random.choice(PRIMES) for _ in range(parser.p)][i],
+                 hash_algo=parser.hash, buffer=parser.m) for i in range(parser.p)
+    ]
+    c = CountMinSketch(parser.k, parser.m, hash_funcs, parser.c, parser.csv, skip_words)
+    if parser.parallel:
+        print(f"Running in parallel mode | {mp.cpu_count()} cores")
+        c.handle_parallel_file(parser.input, mp.cpu_count())
+    else:
+        print("Running in single mode")
+        c.handle_file(parser.input)
 
 
 if __name__ == '__main__':

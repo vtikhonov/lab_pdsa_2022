@@ -1,9 +1,9 @@
-No need to install libraries.
+Install only package `tabulate` -> `pip3 install tabulate` (without file requirements.txt)
 
-python3 count_min.py --input 3207-61.txt --skip-file skip_words.txt -c 13 -p 20 -k 50 -m 100 --hash md5 --csv
+Run:
 
-python3 count_min.py --input 3207-61.txt --skip-file skip_words.txt -c 15 -p 20 -k 50 -m 100 --hash sha1
+`python3 count_min.py --input 3207-61.txt  -k 10 -m 1000 -p 20 -c 18 --hash md5 --csv --skip-file skip_words.txt --parallel`
 
-python3 count_min.py --input 3207-61.txt  -c 12 -p 20 -k 50 -m 100 --hash sha256 --csv
+`python3 count_min.py --input 3207-61.txt  -k 10 -m 2000 -p 50 -c 20 --hash md5 --skip-file skip_words.txt --parallel`
 
 
