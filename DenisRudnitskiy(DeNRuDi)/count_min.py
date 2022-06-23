@@ -1,3 +1,6 @@
+"""
+Written by Denis Rudnitskiy (@DeNRuDi) 2022
+"""
 from typing import Dict
 import multiprocessing as mp
 import argparse
@@ -36,7 +39,7 @@ def get_skip_words(file: io.FileIO) -> list:
 
 
 class CountMinSketch:
-    __slots__ = ["frequently", "size", "hash_func", "count", "skip_words", "ccsv", "backet"]
+    __slots__ = ["frequently", "size", "hash_func", "count", "skip_words", "ccsv", "_filter_words", "backet"]
 
     def __init__(self, frequently, size, hash_func, count, ccsv=None, skip_words=None):
         self.frequently = frequently  # k
@@ -45,6 +48,7 @@ class CountMinSketch:
         self.count = count  # c
         self.skip_words = skip_words
         self.ccsv = ccsv
+        self._filter_words = []
         self.backet = [array.array(self.get_size(), (0 for _ in range(self.size))) for _ in range(len(self.hash_func))]
 
     def get_size(self):
@@ -57,33 +61,30 @@ class CountMinSketch:
 
     def handle_file(self, path: str) -> None:
         temp: Dict[str, int] = {}
-        filter_words = []
 
         with open(path, "r", encoding="UTF-8") as file:
             for line in file.readlines():
-                for word in line.split(" "):
-                    filter_word = re.sub(PATTERN, '', word.lower())
+                for word in line.lower().split():
+                    filter_word = re.sub(PATTERN, '', word)
                     if filter_word in self.skip_words or filter_word == "":
                         continue
-                    filter_words.append(filter_word)
+                    self._filter_words.append(filter_word)
                     self.add(filter_word)
                     temp.update({filter_word: self.get(filter_word)})
-
-        self._handle_result(temp, filter_words)
+        word_count = list(reversed(sorted(temp.items(), key=lambda item: (item[1], item[0]))))
+        result = {k: v for (k, v) in word_count[:self.frequently]}
+        self._handle_result(result)
 
     def handle_parallel_file(self, path: str, cores: int):
         temp: Dict[str, int] = {}
-        filter_words = []
-
         with open(path, "r", encoding="UTF-8") as file:
             raw_text = file.read().lower()
         for word in raw_text.split():
             filter_word = re.sub(PATTERN, '', word)
             if filter_word in self.skip_words:
                 continue
-            filter_words.append(filter_word)
-
-        words_split = [filter_words[i::cores] for i in range(cores)]
+            self._filter_words.append(filter_word)
+        words_split = [self._filter_words[i::cores] for i in range(cores)]
         with mp.Pool(cores) as pool:
             result = pool.map(self._pre_parallel, words_split)
         for di in result:
@@ -92,7 +93,9 @@ class CountMinSketch:
                     temp[word] += count
                 else:
                     temp[word] = count
-        self._handle_result(temp, filter_words)
+        word_count = list(reversed(sorted(temp.items(), key=lambda item: (item[1], item[0]))))
+        result = {k: v for (k, v) in word_count[:self.frequently]}
+        self._handle_result(result)
 
     def _pre_parallel(self, data: list) -> dict:
         temp: Dict[str, int] = {}
@@ -101,17 +104,17 @@ class CountMinSketch:
             temp.update({word: self.get(word)})
         return temp
 
-    def _handle_result(self, data: Dict[str, int], filter_words: list) -> None:
-        word_count = list(reversed(sorted(data.items(), key=lambda item: (item[1], item[0]))))
-
-        freq_approx = {k: v for (k, v) in word_count[:self.frequently]}
-        freq_ref = {k: 0 for k in freq_approx.keys()}
-        for word in filter_words:
+    def _get_freq_ref(self, data: Dict[str, int]) -> dict:
+        freq_ref = {k: 0 for k in data.keys()}
+        for word in self._filter_words:
             if word in freq_ref.keys():
                 freq_ref[word] += 1
+        return freq_ref
 
+    def _handle_result(self, data: Dict[str, int]) -> None:
+        freq_ref = self._get_freq_ref(data)
         table = [('word', 'freq_ref', 'freq_approx', 'error')]
-        for word, count in freq_approx.items():
+        for word, count in data.items():
             freq = freq_ref.get(word)
             err = f"{round(100 * abs(count - freq) / freq, 2)}%"
             table.append((word, freq, count, err))
@@ -127,17 +130,14 @@ class CountMinSketch:
                     writer.writerow({'word': r[0], 'freq_ref': r[1], 'freq_approx': r[2], 'error': r[3]})
                 print("The result is written to a file output.csv")
 
-        data.clear()
+        self._filter_words.clear()
 
     def add(self, x, value=1):
         hash_indexes = [i.get_hashed(x) for i in self.hash_func]
         for j in range(len(self.hash_func)):
+            if self.backet[j][hash_indexes[j]] + value >= 2 ** self.count:  # self.count - 1
+                continue
             self.backet[j][hash_indexes[j]] += value
-            result = self.backet[j][hash_indexes[j]]
-            if result >= 2 ** self.count:
-                raise ValueError(
-                    f"Amount bits ({format(result, 'b')}) in number {result} exceeded the specified "
-                    f"value ({self.count}) of bits.")
 
     def get(self, x):
         hash_indexes = [i.get_hashed(x) for i in self.hash_func]
@@ -145,12 +145,13 @@ class CountMinSketch:
 
 
 class HashFunc:
+    __slots__ = ["a", "b", "p", "buffer_size", "hasher"]
+
     def __init__(self, a, b, p, hash_algo=None, buffer=1000):
         self.a = a
         self.b = b
         self.p = p
         self.buffer_size = buffer
-
         self.hasher = hash_algo
 
     def get_hashed(self, text: str):
@@ -162,6 +163,7 @@ class HashFunc:
 
 
 def main():
+    random.seed(100)
     parser: argparse.Namespace = create_parser().parse_args()
     skip_words: list = get_skip_words(parser.skip_file) if parser.skip_file else []
 
