@@ -1,3 +1,4 @@
+import com.revutska.CountMinSketch;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -23,13 +24,13 @@ public class TestCountMinSketch {
     public void testSizeInBytes() {
         CountMinSketch cms = new CountMinSketch();
         assertEquals(5448, cms.getSizeInBytes());
-        cms = new CountMinSketch(1024, 10, 1);
+        cms = new CountMinSketch(1024, 10, 1, 12);
         assertEquals(40968, cms.getSizeInBytes());
     }
 
     @Test
     public void testCMSketch() {
-        CountMinSketch cms = new CountMinSketch(1024, 10, 2);
+        CountMinSketch cms = new CountMinSketch(1024, 10, 2, 12);
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
@@ -58,12 +59,12 @@ public class TestCountMinSketch {
 
     @Test
     public void testMerge() {
-        CountMinSketch cms = new CountMinSketch(1024, 10, 4);
+        CountMinSketch cms = new CountMinSketch(1024, 10, 4, 12);
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
-        CountMinSketch cms2 = new CountMinSketch(1024, 10, 4);
+        CountMinSketch cms2 = new CountMinSketch(1024, 10, 4, 12);
         cms2.setString("Hello");
         cms2.setString("Hello");
         cms2.setString("Hello");
@@ -106,12 +107,12 @@ public class TestCountMinSketch {
     }
 
     public void testIncompatibleMerge() {
-        CountMinSketch cms = new CountMinSketch(1024, 10, 4);
+        CountMinSketch cms = new CountMinSketch(1024, 10, 4, 12);
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
         cms.set("Hello".getBytes());
-        CountMinSketch cms2 = new CountMinSketch(1024, 11, 4);
+        CountMinSketch cms2 = new CountMinSketch(1024, 11, 4, 12);
         cms2.setString("Hello");
         cms2.setString("Hello");
         cms2.setString("Hello");

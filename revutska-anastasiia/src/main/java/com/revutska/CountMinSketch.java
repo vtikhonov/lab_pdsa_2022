@@ -1,3 +1,5 @@
+package com.revutska;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +75,7 @@ public class CountMinSketch {
     private final int d;
     private final int[][] multiset;
     private final KTop kTop;
+    private final int numberOfBitsPerCounter;
 
     public CountMinSketch() {
         this(DEFAULT_DELTA, DEFAULT_EPSILON, DEFAULT_K);
@@ -83,13 +86,15 @@ public class CountMinSketch {
         this.d = (int) Math.ceil(Math.log(1.0 / delta));
         this.multiset = new int[d][w];
         this.kTop = new KTop(k);
+        this.numberOfBitsPerCounter = 32;
     }
 
-    public CountMinSketch(int width, int depth, int k) {
+    public CountMinSketch(int width, int depth, int k, int numberOfBitsPerCounter) {
         this.w = width;
         this.d = depth;
         this.multiset = new int[d][w];
         this.kTop = new KTop(k);
+        this.numberOfBitsPerCounter = numberOfBitsPerCounter;
     }
 
     public int getWidth() {
@@ -137,7 +142,7 @@ public class CountMinSketch {
         long hash64 = Murmur3.hash64(key);
 
         int hash1 = (int) hash64;
-        int hash2 = (int) (hash64 >>> 32);
+        int hash2 = (int) (hash64 >>> numberOfBitsPerCounter);
 
         int combinedHash = hash1 + (i * hash2);
         // hashcode should be positive, flip all the bits if it's negative
@@ -222,7 +227,7 @@ public class CountMinSketch {
 
     /**
      * Merge the give count min sketch with current one. Merge will throw RuntimeException if the
-     * provided CountMinSketch is not compatible with current one.
+     * provided com.revutska.CountMinSketch is not compatible with current one.
      *
      * @param that - the one to be merged
      */

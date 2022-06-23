@@ -1,5 +1,7 @@
+package com.revutska;
+
 /**
- * Murmur3 32 and 128 bit variants.
+ * com.revutska.Murmur3 32 and 128 bit variants.
  * 32-bit Java port of https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash3.cpp#94
  * 128-bit Java port of https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash3.cpp#255
  */
@@ -25,7 +27,7 @@ public class Murmur3 {
     private static final int DEFAULT_SEED = 0;
 
     /**
-     * Murmur3 32-bit variant.
+     * com.revutska.Murmur3 32-bit variant.
      *
      * @param data - input byte array
      * @return - hashcode
@@ -35,7 +37,7 @@ public class Murmur3 {
     }
 
     /**
-     * Murmur3 32-bit variant.
+     * com.revutska.Murmur3 32-bit variant.
      *
      * @param data   - input byte array
      * @param length - length of array
@@ -92,7 +94,7 @@ public class Murmur3 {
     }
 
     /**
-     * Murmur3 64-bit variant. This is essentially MSB 8 bytes of Murmur3 128-bit variant.
+     * com.revutska.Murmur3 64-bit variant. This is essentially MSB 8 bytes of com.revutska.Murmur3 128-bit variant.
      *
      * @param data - input byte array
      * @return - hashcode
@@ -102,7 +104,7 @@ public class Murmur3 {
     }
 
     /**
-     * Murmur3 64-bit variant. This is essentially MSB 8 bytes of Murmur3 128-bit variant.
+     * com.revutska.Murmur3 64-bit variant. This is essentially MSB 8 bytes of com.revutska.Murmur3 128-bit variant.
      *
      * @param data   - input byte array
      * @param length - length of array
@@ -165,7 +167,7 @@ public class Murmur3 {
     }
 
     /**
-     * Murmur3 128-bit variant.
+     * com.revutska.Murmur3 128-bit variant.
      *
      * @param data - input byte array
      * @return - hashcode (2 longs)
@@ -175,7 +177,7 @@ public class Murmur3 {
     }
 
     /**
-     * Murmur3 128-bit variant.
+     * com.revutska.Murmur3 128-bit variant.
      *
      * @param data   - input byte array
      * @param length - length of array
