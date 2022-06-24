@@ -84,25 +84,23 @@ class HashFunc:
         self.p = p
         self.buffer_size = buffer_size
         if hash_algo is not None:
-            self.hasher = HashFunc.__get_hashlib_hasher(hash_algo)
+            self.__custom_hasher = HashFunc.__get_hashlib_hasher(hash_algo)
         else:
-            self.hasher = hash
+            self.__custom_hasher = None
 
     def get_hashed(self, text):
-        hashed = abs(self.hasher(text))
+        if self.__custom_hasher is None:
+            hashed = abs(hash(text))
+        else:
+            hashed_hex = self.__custom_hasher(text.encode('utf-8')).hexdigest()
+            hashed = int(hashed_hex, 16)
         return (((self.a * hashed + self.b) % self.p) % self.buffer_size)
 
     @staticmethod
     def __get_hashlib_hasher(hasher_name):
         if hasher_name not in hashlib.algorithms_guaranteed:
             raise HasherError(f'Algorithm {hasher_name} is not implemented')
-        hashlib_func = getattr(hashlib, hasher_name)
-
-        def get_hashed(text):
-            hashed = hashlib_func(text.encode('utf-8')).hexdigest()
-            return int(hashed, 16)
-
-        return get_hashed
+        return getattr(hashlib, hasher_name)
 
 
 class CountMinSketch():
