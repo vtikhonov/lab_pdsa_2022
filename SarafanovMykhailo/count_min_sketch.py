@@ -279,7 +279,8 @@ if __name__ == '__main__':
         HashFunc(randint(2, 1000),
                  randint(2, 1000),
                  primes[i],
-                 hash_algo=params.hash) for i in range(params.p)
+                 hash_algo=params.hash,
+                 buffer_size=params.m) for i in range(params.p)
     ]
 
     top_k_words = None
