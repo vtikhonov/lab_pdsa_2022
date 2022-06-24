@@ -13,6 +13,8 @@ following cmd flags for test:
 -m buffer size for all possible options. Defaults to 1000
 -m cell size for liming counter cell size in bits. Defaults to 12. Will be used
     for selecting sketch array dtype
+--silent do not raise exception if counter exceeds cell limit in bits. False by
+    default
 --parallel run in parrallel mode using Python mulltiprocessing. All available
     cores will be used
 --hash hash algorithm to use as base. Python's default hash will be used if not
@@ -32,6 +34,7 @@ __all__ = [
 
 import hashlib
 from argparse import ArgumentParser
+from warnings import warn as print_warning
 from functools import partial
 from multiprocessing import Pool, cpu_count
 from random import randint, seed, choice
@@ -118,7 +121,8 @@ class CountMinSketch():
                  k_count,
                  input_words=[],
                  cell_size=DEFAULT_CELL_SIZE,
-                 buffer_size=DEFAULT_BUFFER_SIZE):
+                 buffer_size=DEFAULT_BUFFER_SIZE,
+                 silent=False):
         '''
         Args:
             hash_funcs (list): list containing family of hash functions to get
@@ -132,6 +136,9 @@ class CountMinSketch():
                 DEFAULT_CELL_SIZE
             buffer_size (int): sketch buffer size. Must be limited to max hash
                 value. Defaults to DEFAULT_BUFFER_SIZE
+            silent (bool): do not raise exception, but print warning if counter
+                exceeds cell size limit. Defaults to False (meaning that
+                exception will be raised)
         '''
         self.hash_funcs = hash_funcs
         if not k_count:
@@ -150,6 +157,7 @@ class CountMinSketch():
         else:
             raise CountMinSketchError(f'Cells of {cell_size} bits are not '
                                       'supported')
+        self.__silent = silent
         self.sketch = zeros(shape=(len(self.hash_funcs), self.buffer_size),
                             dtype=cell_type)
         self.frequences = {}
@@ -163,9 +171,14 @@ class CountMinSketch():
             for x, _ in enumerate(self.hash_funcs):
                 cnt_updated = self.sketch[x][hashes[x]] + 1
                 if cnt_updated >= 2**self.cell_size:
-                    raise CountMinSketchError('Counter exceeds cell size: ' +
-                                              str(self.cell_size) + ' bits')
-                self.sketch[x][hashes[x]] = cnt_updated
+                    log_msg = (f'Counter exceeds cell limit: {self.cell_size} '
+                               'bits')
+                    if self.__silent:
+                        print_warning(log_msg)
+                    else:
+                        raise CountMinSketchError(log_msg)
+                else:
+                    self.sketch[x][hashes[x]] = cnt_updated
                 counts.append(self.sketch[x][hashes[x]])
             min_hash_cnt = min(counts)
             present = (word in self.frequences.keys())
@@ -246,6 +259,12 @@ def __process_args():
                              default=DEFAULT_CELL_SIZE,
                              help='Counter bits size limit. Defaults to ' +
                              str(DEFAULT_CELL_SIZE))
+    args_parser.add_argument('--silent',
+                             action='store_true',
+                             required=False,
+                             default=False,
+                             help='Do not raise exception if counter exceeds '
+                             'bits size limit')
     args_parser.add_argument('--output',
                              type=str,
                              required=False,
@@ -253,9 +272,10 @@ def __process_args():
     return args_parser.parse_args()
 
 
-def __get_frequences(words_chunk, hash_funcs, k_count, cell_size, buffer_size):
+def __get_frequences(words_chunk, hash_funcs, k_count, cell_size, buffer_size,
+                     silent):
     return CountMinSketch(hash_funcs, k_count, words_chunk, cell_size,
-                          buffer_size).frequences
+                          buffer_size, silent).frequences
 
 
 def __merge_frequences(frequences):
@@ -295,7 +315,8 @@ if __name__ == '__main__':
                                   hash_funcs=hash_funcs,
                                   k_count=params.k,
                                   cell_size=params.c,
-                                  buffer_size=params.m)
+                                  buffer_size=params.m,
+                                  silent=params.silent)
             freqs = pool.map(packed_func, words_split)
         merged_freqs = __merge_frequences(freqs)
         top_k_words = list(CountMinSketch.sort_dict(merged_freqs).items())[:params.k]
@@ -305,7 +326,8 @@ if __name__ == '__main__':
                                           params.k,
                                           input_words=input_words,
                                           cell_size=params.c,
-                                          buffer_size=params.m)
+                                          buffer_size=params.m,
+                                          silent=params.silent)
         top_k_words = list(count_min_sketch.frequences.items())
     exec_time = time() - start_time
     print(f'Top {params.k} words:')
