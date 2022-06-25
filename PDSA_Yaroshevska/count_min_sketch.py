@@ -1,65 +1,123 @@
-import numpy as np
+from typing import Dict
+import argparse
+import hashlib
+import random
+import array
+import re
 
-class CountMinSketch(object):
 
-    def __init__(self, m, p, hash_func_family, M=None):
-        self.m = m
-        self.p = p
-        self.hash_func_family = hash_func_family
-        if len(hash_func_family) != m:
-            raise ValueError("The number of hash functions must match match the depth. (%s, %s)" % (m, len(hash_func_family)))
-        if M is None:
-            self.M = np.zeros([m, p], dtype=np.int32)
+PRIMES = (7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203, 2281, 3217, 1281, 4423, 9689, 9941, 11213, 19937, 21701)  # простые числа Мерсенна
+
+
+def commline_parsing():  # создание агрументов для парсинга командной строки
+    parser = argparse.ArgumentParser(description='K-Top frequency with Count-Min Sketch problem implementation | Частота K-Top с реализацией задачи Count-Min Sketch')
+    parser.add_argument('-k', type=int, help='Количество наиболее частых элементов, которые необходимо вывести', required=True)
+    parser.add_argument('-m', type=int, help='Размер буфера алгоритма Count-Min Sketch', required=True)
+    parser.add_argument('-p', type=int, help='Количество независимых хеш-функций', required=True)
+    parser.add_argument('-c', type=int, default=12, help='Количество бит на счетчик, по умолчанию 12', required=True)
+    return parser
+
+
+class CountMinSketch:
+
+    def __init__(self, k, m, p, c, skip_words=None):
+        self.k = k  # кол-во наиб. частых элементов
+        self.m = m  # кол-во столбцов матрицы (размерность хеш-функций)
+        self.p = p  # кол-во хеш-функций
+        self.c = c  # битовый счетчик
+        self.skip_words = skip_words
+        self.words_dict: Dict[str, int] = {}
+        self.M = [array.array(self.get_size(), (0 for _ in range(self.m))) for _ in range(len(self.p))]
+
+    def get_size(self):
+        if self.c <= 8:
+            return "B"
+        elif self.c <= 16:
+            return "I"
         else:
-            self.M = M
+            return "L"
 
-    def add(self, x, delta=1):
-        for i in range(self.m):
-            self.M[i][self.hash_func_family[i](x) % self.p] += delta
+    def fill_M(self, path: str):  # заполнение словаря и матрицы значениями
+        with open(path, "r", encoding="UTF-8") as file:
+            for line in file.readlines():
+                if line not in self.skip_words:
+                    for word in line.split(" "):
+                        temp_word = re.sub(r'[.,?!/|[\]\\"“\t\n)(:;#&\']', '', word.lower())
+                        if temp_word == "" or temp_word in self.skip_words:
+                            continue
+                        self.add(temp_word)
+                        self.words_dict.update({temp_word: self.frequency(temp_word)})
 
-    def batch_add(self, lst):
-        pass
+    def add(self, x, delta=1):  # добавление чисел в матрицу
+        hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
+        for j in range(len(self.p)):
+            self.M[j][hash_indexes[j]] += delta
+            result = self.M[j][hash_indexes[j]]
+            if result >= 2 ** self.c:
+                raise ValueError("Количество заданных бит превышено")
 
-    def query(self, x):
-        return min([self.M[i][self.hash_func_family[i](x) % self.p] for i in range(self.m)])
+    def frequency(self, x):  # поиск частоты элементов
+        hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
+        result = []
+        for i in range(len(self.p)):
+            result.append(self.M[i][hash_indexes[i]])
+        return min(result)
 
-    def get_matrix(self):
-        return self.M
+    def get(self, word: str):  # вывод на экран частоты конкретного слова (при необходимости)
+        print(self.words_dict.get(word))
 
-text_file = open('Oliver_Twist_test.txt', 'r', encoding='UTF-8')
-text = text_file.read()
 
-#cleaning
-text = text.lower()
-words = text.split()
-words = [word.strip('.,!;()[]_') for word in words]
-words = [word.replace("'s", '') for word in words]
-words.remove("the")
+class HashFunction:
+    def __init__(self, a, b, p, buff, hash_algo=None):
+        self.a = a
+        self.b = b
+        self.p = p
+        self.buffer_size = buff
+        self.hasher = hash_algo
 
-#finding unique
-unique = []
-for word in words:
-    if word not in unique:
-        unique.append(word)
+    def get_hashfunc_family(self, text: str):  # создаине семейства p хеш-функций
+        if self.hasher:
+            reference = getattr(hashlib, self.hasher)
+            hashed = int(reference(text.encode("UTF-8")).hexdigest(), 16)
+        else:
+            hashed = abs(hash(text))
+        return ((self.a * hashed + self.b) % self.p) % self.buffer_size
 
-#sort
-unique.sort()
 
-max_words = [0] * 5
-max_count = [0] * 5
+def main():
+    skip_words = []
+    hash_funcs = []
+    parser = commline_parsing().parse_args()
+    with open("skip_words_new.txt", "r") as skip_file:
+        for line in skip_file.readlines():
+            skip_words.append(line.rstrip("\n"))
 
-skiptext_file = open('skip_words_new.txt', 'r', encoding='UTF-8')
-skiptext = skiptext_file.read()
-skiplist = skiptext.split()
-# print(skiplist)
+    primes = [random.choice(PRIMES) for _ in range(parser.p)]
 
-for k in range(0, 5):
-    for i in range(len(unique)):
-        if unique[i] not in skiplist and unique[i] not in max_words:
-            max_count_test = words.count(unique[i])
-            if max_count_test >= max_count[k]:
-                max_count[k] = max_count_test
-                max_words[k] = unique[i]
+    for i in range(parser.p):
+        hash_funcs.append(HashFunction(random.randint(2, 1000), random.randint(2, 1000), primes[i], parser.m, hash_algo="md5"))
 
-print(max_words)
-print(max_count)
+    cms = CountMinSketch(parser.k, parser.m, hash_funcs, parser.c, skip_words)
+    cms.fill_M("Oliver_Twist.txt")
+
+    sorted_cortege = sorted(cms.words_dict.items(), key = lambda x: x[1], reverse=True)  # отсортированный по убыванию список кортежей
+    # sorted_dict = dict(sorted_cortege)  # преобразовние в словарь
+
+    for i in range(parser.k):
+        print("Слово: " + "' " + sorted_cortege[i][0] + " '")
+        print("Вероятностная частота: ", sorted_cortege[i][1])
+        count = 0
+        with open("Oliver_Twist.txt", "r", encoding="UTF-8") as file:
+            for line in file.readlines():
+                    for word in line.split(" "):
+                        filter_word = re.sub(r'[.,?!/|[\]\\"“\t\n)(:;#&\']', '', word.lower())
+                        if sorted_cortege[i][0] == filter_word:
+                            count += 1
+        print("Реальная частота: ", count)
+        print("Ошибка (%): ", float('{:.3f}'.format(abs(100 * ((count - sorted_cortege[i][1]) / sorted_cortege[i][1])))))
+
+    # print(c.words_dict)
+    # c.get("oliver")
+
+
+main()
