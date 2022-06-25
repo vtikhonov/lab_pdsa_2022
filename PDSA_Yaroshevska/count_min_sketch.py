@@ -116,8 +116,5 @@ def main():
         print("Реальная частота: ", count)
         print("Ошибка (%): ", float('{:.3f}'.format(abs(100 * ((count - sorted_cortege[i][1]) / sorted_cortege[i][1])))))
 
-    # print(c.words_dict)
-    # c.get("oliver")
-
 
 main()
