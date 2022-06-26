@@ -12,3 +12,7 @@ them
 him
 her
 to
+of
+in
+it
+by

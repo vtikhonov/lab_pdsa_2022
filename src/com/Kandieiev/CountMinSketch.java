@@ -1,10 +1,12 @@
 package com.Kandieiev;
 
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Random;
 
 import static jdk.nashorn.internal.objects.NativeMath.abs;
 import static jdk.nashorn.internal.objects.NativeMath.min;
+import static jdk.nashorn.internal.runtime.ScriptObject.setGlobalObjectProto;
 
 public class CountMinSketch {
 
@@ -15,12 +17,15 @@ public class CountMinSketch {
     private int[] h4;
     private int[] h5;
     private int[] h6;
-    private static int size = 11;
+    private static int size;
     private int[] a = new int[6];
     private int[] b = new int[6];
+    private int[] mersene = {31, 127, 8191};
     Random random = new Random();
+    int p = 127;
 
-    public CountMinSketch() {
+    public CountMinSketch(int size) {
+        this.size = size;
         h1 = new int[size];
         h2 = new int[size];
         h3 = new int[size];
@@ -28,10 +33,9 @@ public class CountMinSketch {
         h5 = new int[size];
         h6 = new int[size];
         for (int i = 0; i < 6; i++) {
-            a[i] = random.nextInt(100);
-            b[i] = random.nextInt(100);
+            a[i] = random.nextInt(p-2)+1;
+            b[i] = random.nextInt(p-1);
         }
-
     }
 
     public void insert(int val)
@@ -52,7 +56,7 @@ public class CountMinSketch {
     }
 
     public int hashFunction(int val, int number){
-        return Math.abs(a[number] * val + b[number]) % (size-1);
+        return (int)(((a[number] * (long)val + b[number])% p) % (size));
     }
 
     public int sketchCount(int val)
@@ -63,7 +67,8 @@ public class CountMinSketch {
         int hash4 = hashFunction(val, 3);
         int hash5 = hashFunction(val, 4);
         int hash6 = hashFunction(val, 5);
-        int [] hashes= {hash1, hash2, hash3, hash4, hash5, hash6};
+        int [] hashes= {h1[hash1], h2[hash2], h3[hash3], h4[hash4], h5[hash5], h6[hash6]};
+
         int min = Arrays.stream(hashes).min().getAsInt();
         return min;
     }
