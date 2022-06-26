@@ -72,7 +72,7 @@ class HashFunction:
         self.buffer_size = buff
         self.hasher = hash_algo
 
-    def get_hashfunc_family(self, text: str):  # создаине семейства p хеш-функций
+    def get_hashfunc_family(self, text: str):  # создание семейства p хеш-функций
         if self.hasher:
             reference = getattr(hashlib, self.hasher)
             hashed = int(reference(text.encode("UTF-8")).hexdigest(), 16)
