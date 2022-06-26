@@ -51,10 +51,10 @@ class CountMinSketch:
     def add(self, x, delta=1):  # добавление чисел в матрицу
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
         for j in range(len(self.p)):
-            self.M[j][hash_indexes[j]] += delta
-            result = self.M[j][hash_indexes[j]]
-            if result >= 2 ** self.c:
-                raise ValueError("Количество заданных бит превышено")
+            self.M[j][hash_indexes[j]] += delta  # +1
+            # result = self.M[j][hash_indexes[j]]
+            # if result >= 2 ** self.c:
+            #     raise ValueError("Количество заданных бит превышено")
 
     def frequency(self, x):  # поиск частоты элементов
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
@@ -85,6 +85,7 @@ class HashFunction:
 
 
 def main():
+    random.seed(15)
     skip_words = []
     hash_funcs = []
     parser = commline_parsing().parse_args()
@@ -109,12 +110,15 @@ def main():
         count = 0
         with open("Oliver_Twist.txt", "r", encoding="UTF-8") as file:
             for line in file.readlines():
-                    for word in line.split(" "):
-                        filter_word = re.sub(r'[.,?!/|[\]\\"“\t\n)(:;#&\']', '', word.lower())
-                        if sorted_cortege[i][0] == filter_word:
-                            count += 1
+                for word in line.split(" "):
+                    temp_word = re.sub(r'[.,?!/|[\]\\"“\t\n)(:;#&\']', '', word.lower())
+                    if sorted_cortege[i][0] == temp_word:
+                        count += 1
         print("Реальная частота: ", count)
         print("Ошибка (%): ", float('{:.3f}'.format(abs(100 * ((count - sorted_cortege[i][1]) / sorted_cortege[i][1])))))
+
+    # print(c.words_dict)
+    # c.get("oliver")
 
 
 main()
