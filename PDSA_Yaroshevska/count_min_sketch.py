@@ -52,9 +52,6 @@ class CountMinSketch:
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
         for j in range(len(self.p)):
             self.M[j][hash_indexes[j]] += delta  # +1
-            # result = self.M[j][hash_indexes[j]]
-            # if result >= 2 ** self.c:
-            #     raise ValueError("Количество заданных бит превышено")
 
     def frequency(self, x):  # поиск частоты элементов
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
@@ -102,7 +99,6 @@ def main():
     cms.fill_M("Oliver_Twist.txt")
 
     sorted_cortege = sorted(cms.words_dict.items(), key = lambda x: x[1], reverse=True)  # отсортированный по убыванию список кортежей
-    # sorted_dict = dict(sorted_cortege)  # преобразовние в словарь
 
     for i in range(parser.k):
         print("Слово: " + "' " + sorted_cortege[i][0] + " '")
@@ -116,9 +112,6 @@ def main():
                         count += 1
         print("Реальная частота: ", count)
         print("Ошибка (%): ", float('{:.3f}'.format(abs(100 * ((count - sorted_cortege[i][1]) / sorted_cortege[i][1])))))
-
-    # print(c.words_dict)
-    # c.get("oliver")
 
 
 main()
