@@ -197,10 +197,11 @@ class CountMinSketch():
         }
 
 
-def __get_mercen_primes(n):
+def __get_mercen_primes(n, buffer_size):
     primes = []
+    to_select = [x for x in MERCEN_PRIMES if x > buffer_size]
     for _ in range(n):
-        primes.append(choice(MERCEN_PRIMES))
+        primes.append(choice(to_select))
     return primes
 
 
@@ -294,7 +295,10 @@ if __name__ == '__main__':
     params = __process_args()
     __init_skipwords('./skip_words.txt')
     input_words = read_words(params.input)
-    primes = __get_mercen_primes(params.p)
+    if params.m > max(MERCEN_PRIMES):
+        raise HasherError(f'Buffer size {params.m} is too high')
+
+    primes = __get_mercen_primes(params.p, params.m)
     hash_funcs = [
         HashFunc(randint(2, 1000),
                  randint(2, 1000),
