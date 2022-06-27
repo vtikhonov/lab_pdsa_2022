@@ -60,8 +60,7 @@ class CountMinSketch:
             return "L"
 
     def handle_file(self, path: str) -> None:
-        temp: Dict[str, int] = {}
-
+        result: Dict[str, int] = {}
         with open(path, "r", encoding="UTF-8") as file:
             for line in file.readlines():
                 for word in line.lower().split():
@@ -70,10 +69,19 @@ class CountMinSketch:
                         continue
                     self._filter_words.append(filter_word)
                     self.add(filter_word)
-                    temp.update({filter_word: self.get(filter_word)})
-        word_count = list(reversed(sorted(temp.items(), key=lambda item: (item[1], item[0]))))
-        result = {k: v for (k, v) in word_count[:self.frequently]}
-        self._handle_result(result)
+                    if len(result) < self.frequently:
+                        result.update({filter_word: self.get(filter_word)})
+                    else:
+                        temp = result.copy()
+                        if filter_word in temp.keys():
+                            result.update({filter_word: self.get(filter_word)})
+                        elif min(temp.values()) <= self.get(filter_word):
+                            for k, v in temp.items():
+                                if v == min(temp.values()):
+                                    result.pop(k)
+                                    result.update({filter_word: self.get(filter_word)})
+        list_sorted = reversed(sorted(result.items(), key=lambda item: (item[1], item[0])))
+        self._handle_result(dict(list_sorted))
 
     def handle_parallel_file(self, path: str, cores: int):
         temp: Dict[str, int] = {}
@@ -81,7 +89,7 @@ class CountMinSketch:
             raw_text = file.read().lower()
         for word in raw_text.split():
             filter_word = re.sub(PATTERN, '', word)
-            if filter_word in self.skip_words:
+            if filter_word in self.skip_words or filter_word == "":
                 continue
             self._filter_words.append(filter_word)
         words_split = [self._filter_words[i::cores] for i in range(cores)]
