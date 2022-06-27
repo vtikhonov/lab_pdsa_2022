@@ -6,21 +6,33 @@ import array
 import re
 
 
-PRIMES = (1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535, 131071, 262143, 524287, 1048575, 2097151)  # простые числа Мерсенна
+# PRIMES = (3, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203, 2281, 3217, 1281, 4423, 9689, 9941, 11213, 19937, 21701)  # простые числа Мерсенна
+PRIMES = (1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535, 131071, 262143, 524287, 1048575, 2097151)
 
 
 def commline_parsing():  # создание агрументов для парсинга командной строки
     parser = argparse.ArgumentParser(description='K-Top frequency with Count-Min Sketch problem implementation | Частота K-Top с реализацией задачи Count-Min Sketch')
+    parser.add_argument('--input', type=str, help='Исходный файл', required=True)
     parser.add_argument('-k', type=int, help='Количество наиболее частых элементов, которые необходимо вывести', required=True)
     parser.add_argument('-m', type=int, help='Размер буфера алгоритма Count-Min Sketch', required=True)
     parser.add_argument('-p', type=int, help='Количество независимых хеш-функций', required=True)
     parser.add_argument('-c', type=int, default=12, help='Количество бит на счетчик, по умолчанию 12', required=True)
     return parser
 
+def get_allwords(path: str, skip_words: set):
+    all_words = []
+    with open(path, "r", encoding="UTF-8") as file:
+        for line in file.readlines():
+            for word in line.lower().split():
+                temp_word = re.sub(r'[.,?!/|\[\]\\"“\t\n)(:;#&\']', '', word).replace("﻿", "")
+                if temp_word not in skip_words and temp_word != "":
+                    all_words.append(temp_word)
+    return all_words
+
 
 class CountMinSketch:
 
-    def __init__(self, k, m, p, c, skip_words=None):
+    def __init__(self, k, m, p, c, allwords, skip_words=None):
         self.k = k  # кол-во наиб. частых элементов
         self.m = m  # кол-во столбцов матрицы (размерность хеш-функций)
         self.p = p  # кол-во хеш-функций
@@ -28,6 +40,7 @@ class CountMinSketch:
         self.skip_words = skip_words
         self.words_dict: Dict[str, int] = {}
         self.M = [array.array(self.get_size(), (0 for _ in range(self.m))) for _ in range(len(self.p))]
+        self.allwords = allwords
 
     def get_size(self):
         if self.c <= 8:
@@ -37,16 +50,20 @@ class CountMinSketch:
         else:
             return "L"
 
-    def fill_M(self, path: str):  # заполнение словаря и матрицы значениями
-        with open(path, "r", encoding="UTF-8") as file:
-            for line in file.readlines():
-                if line not in self.skip_words:
-                    for word in line.split(" "):
-                        temp_word = re.sub(r'[.,?!/|[\]\\"“\t\n)(:;#&\']', '', word.lower())
-                        if temp_word == "" or temp_word in self.skip_words:
-                            continue
-                        self.add(temp_word)
-                        self.words_dict.update({temp_word: self.frequency(temp_word)})
+    def fill_M(self):  # заполнение словаря и матрицы значениями
+        for temp_word in self.allwords:
+            self.add(temp_word)
+            if len(self.words_dict) < self.k:
+                self.words_dict.update({temp_word: self.frequency(temp_word)})
+            else:
+                temp_words_dict = self.words_dict.copy()
+                if temp_word in temp_words_dict.keys():
+                    self.words_dict.update({temp_word: self.frequency(temp_word)})
+                elif self.frequency(temp_word) >= min(temp_words_dict.values()):
+                    for k, v in temp_words_dict.items():
+                        if v == min(temp_words_dict.values()):
+                            self.words_dict.pop(k)
+                            self.words_dict.update({temp_word: self.frequency(temp_word)})
 
     def add(self, x, delta=1):  # добавление чисел в матрицу
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
@@ -59,9 +76,6 @@ class CountMinSketch:
         for i in range(len(self.p)):
             result.append(self.M[i][hash_indexes[i]])
         return min(result)
-
-    def get(self, word: str):  # вывод на экран частоты конкретного слова (при необходимости)
-        print(self.words_dict.get(word))
 
 
 class HashFunction:
@@ -82,36 +96,34 @@ class HashFunction:
 
 
 def main():
-    random.seed(15)
-    skip_words = []
-    hash_funcs = []
+    random.seed(50)
+    skip_words = set()
+    hash_funcs = set()
     parser = commline_parsing().parse_args()
-    with open("skip_words_new.txt", "r") as skip_file:
+    with open("skip_words.txt", "r") as skip_file:
         for line in skip_file.readlines():
-            skip_words.append(line.rstrip("\n"))
+            skip_words.add(line.rstrip("\n"))
 
     primes = [random.choice(PRIMES) for _ in range(parser.p)]
 
     for i in range(parser.p):
-        hash_funcs.append(HashFunction(random.randint(2, 1000), random.randint(2, 1000), primes[i], parser.m, hash_algo="md5"))
+        hash_funcs.add(HashFunction(random.randint(2, 1000), random.randint(2, 1000), primes[i], parser.m, hash_algo="sha1"))
 
-    cms = CountMinSketch(parser.k, parser.m, hash_funcs, parser.c, skip_words)
-    cms.fill_M("Oliver_Twist.txt")
+    all_words = get_allwords(parser.input, skip_words)
+    cms = CountMinSketch(parser.k, parser.m, hash_funcs, parser.c, all_words, skip_words)
+    cms.fill_M()
 
-    sorted_cortege = sorted(cms.words_dict.items(), key = lambda x: x[1], reverse=True)  # отсортированный по убыванию список кортежей
-
-    for i in range(parser.k):
-        print("Слово: " + "' " + sorted_cortege[i][0] + " '")
-        print("Вероятностная частота: ", sorted_cortege[i][1])
+    for i in cms.words_dict.items():
+        # print("Слово: " + "' " + i[0] + " '")
+        # print("Вероятностная частота: ", i[1])
+        print(f"Слово: ' {i[0]} '")
+        print(f"Вероятностная частота: {i[1]}")
         count = 0
-        with open("Oliver_Twist.txt", "r", encoding="UTF-8") as file:
-            for line in file.readlines():
-                for word in line.split(" "):
-                    temp_word = re.sub(r'[.,?!/|[\]\\"“\t\n)(:;#&\']', '', word.lower())
-                    if sorted_cortege[i][0] == temp_word:
-                        count += 1
-        print("Реальная частота: ", count)
-        print("Ошибка (%): ", float('{:.3f}'.format(abs(100 * ((count - sorted_cortege[i][1]) / sorted_cortege[i][1])))))
+        for j in all_words:
+            if i[0] == j:
+                count += 1
+        print(f"Реальная частота: {count}")
+        print(f"Ошибка (%): {float('{:.3f}'.format(abs(100 * ((count - i[1]) / i[1]))))}")
 
 
 main()
