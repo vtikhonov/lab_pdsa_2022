@@ -165,7 +165,7 @@ class HashFunc:
 def main():
     random.seed(100)
     parser: argparse.Namespace = create_parser().parse_args()
-    skip_words: set = get_skip_words(parser.skip_file) if parser.skip_file else []
+    skip_words: set = get_skip_words(parser.skip_file) if parser.skip_file else set()
     if not os.path.exists(parser.input):
         print(f"File {parser.input} no exists.")
         return exit(-1)
