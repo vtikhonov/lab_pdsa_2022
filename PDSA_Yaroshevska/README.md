@@ -1,3 +1,3 @@
 Параметры запуска:
 
-python count_min_sketch.py -k 10 -m 1000 -p 30 -c 18
+python count_min_sketch.py --input Oliver_Twist.txt -k 7 -m 1000 -p 10 -c 12
