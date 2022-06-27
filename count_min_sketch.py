@@ -34,16 +34,13 @@ def update_cm_sketch(data, cm_sketch):
             cm_sketch[j, i] += 1
 
 
-def cm_frequency_estimation(data, cm_sketch):
-    f_dict = {}
-    for w_n, w in enumerate(data):
-        f = []
-        for j in range(p):
-            i = hash(w + str(j)) % m
-            f.append(cm_sketch[j, i])
-        f_dict[w] = min(f)
-    sorted_freq = sorted(f_dict.items(), key=lambda item: int(item[1]), reverse=True)
-    return sorted_freq
+def cm_frequency_estimation(w, cm_sketch):
+    f = []
+    for j in range(p):
+        i = hash(w + str(j)) % m
+        f.append(cm_sketch[j, i])
+    # sorted_freq = sorted(f_dict.items(), key=lambda item: int(item[1]), reverse=True)
+    return min(f)
 
 
 def count_exact_word_frequency(data):
@@ -57,17 +54,34 @@ def count_exact_word_frequency(data):
     return sorted_freq
 
 
+def get_top_freq_elements(data, cm_sketch):
+    X = []
+    for w in data:
+        if w in X:
+            pass
+        elif len(X) < k:
+            X.append(w)
+        else:
+            f_w = cm_frequency_estimation(w, cm_sketch)
+            X_f = {x: cm_frequency_estimation(x, cm_sketch) for x in X}
+            X_f_sorted = sorted(X_f.items(), key=lambda item: int(item[1]))
+            x_min, f_x_min = X_f_sorted[0][0], X_f_sorted[0][1]
+            if f_w > f_x_min:
+                X.append(w)
+                X.remove(x_min)
+    return X
+
+
 def save_result(cm_sketch_freq, exact_freq):
-    result = dict(exact_freq[:k])
-    df = pd.DataFrame({'word': list(result.keys()), 'freq_approx': list(result.values())})
-    cm_sketch_freq = dict(cm_sketch_freq)
-    freq_approx = []
-    for w in result.keys():
-        freq_approx.append(int(cm_sketch_freq[w]))
-    df.insert(2, 'freq_approx', freq_approx, True)
+    cm_sketch_freq = dict(sorted(cm_sketch_freq.items(), key=lambda item: int(item[1]), reverse=True))
+    df = pd.DataFrame({'word': list(cm_sketch_freq.keys()), 'freq_approx': list(cm_sketch_freq.values())})
+    exact_freq = dict(exact_freq)
+    freq_ref = []
+    for w in cm_sketch_freq.keys():
+        freq_ref.append(int(exact_freq[w]))
+    df.insert(1, 'freq_ref', freq_ref, True)
     error = []
-    freq_ref = result.values()
-    for ref, approx in zip(freq_ref, freq_approx):
+    for ref, approx in zip(freq_ref, cm_sketch_freq.values()):
         error.append(100 * abs(approx - ref) / ref)
     df.insert(3, 'error', error, True)
     df.to_csv('result.csv', index=False)
@@ -92,17 +106,20 @@ separators = [' ', ',', '.', ':', ';', '!', '?', '—', '”', '“', '\n']
 words_skip_f = open('skip_words.txt', 'r')
 words_skip = words_skip_f.read()
 words_skip = words_skip.split('\n')
+words_skip_f.close()
 
 # list of all words in text
 f = codecs.open(input, "r", "utf_8_sig")
 text = f.read()
 words = split(text, separators)
 words = [w.lower() for w in words if w.lower() not in words_skip]
+f.close()
 
 # frequency by count min sketch
 cm_sketch = np.zeros((p, m))
 update_cm_sketch(words, cm_sketch)
-freq_cm_sketch = cm_frequency_estimation(words, cm_sketch)
+X = get_top_freq_elements(words, cm_sketch)
+freq_cm_sketch = {x: cm_frequency_estimation(x, cm_sketch) for x in X}
 
 # exact frequency
 freq_exact = count_exact_word_frequency(words)
@@ -111,4 +128,3 @@ freq_exact = count_exact_word_frequency(words)
 result = save_result(freq_cm_sketch, freq_exact)
 print(result)
 
-f.close()
