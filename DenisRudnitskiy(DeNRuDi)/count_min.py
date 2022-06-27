@@ -34,8 +34,8 @@ def create_parser():
     return parser
 
 
-def get_skip_words(file: io.FileIO) -> list:
-    return [line.strip() for line in file.readlines()]
+def get_skip_words(file: io.FileIO) -> set:
+    return {line.strip() for line in file.readlines()}
 
 
 class CountMinSketch:
@@ -165,8 +165,7 @@ class HashFunc:
 def main():
     random.seed(100)
     parser: argparse.Namespace = create_parser().parse_args()
-    skip_words: list = get_skip_words(parser.skip_file) if parser.skip_file else []
-
+    skip_words: set = get_skip_words(parser.skip_file) if parser.skip_file else []
     if not os.path.exists(parser.input):
         print(f"File {parser.input} no exists.")
         return exit(-1)
