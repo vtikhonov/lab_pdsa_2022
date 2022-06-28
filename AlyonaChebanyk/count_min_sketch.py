@@ -2,6 +2,7 @@ import numpy as np
 import codecs
 import pandas as pd
 import argparse
+import hashlib
 
 delta = 0.02
 epsilon = 0.005
@@ -19,6 +20,8 @@ def create_parser():
                         default=int(np.log(1 / delta)))
     parser.add_argument('-c', type=int, default=32, help='number of bits per counter, default is 12', required=False,
                         choices=[8, 16, 32])
+    parser.add_argument('--hash', type=str, required=False,
+                        choices=["sha1", "sha224", "sha256", "sha384", "sha512", "md5"])
     return parser
 
 
@@ -43,14 +46,16 @@ def create_cm_sketch(c):
 def update_cm_sketch(data, cm_sketch):
     for w in data:
         for j in range(p):
-            i = hash(w + str(j)) % m
+            hash_func = get_hash_func(hash_name)
+            i = int(hash_func((w + str(j)).encode('utf-8')).hexdigest(), 16) % m
             cm_sketch[j, i] += 1
 
 
 def cm_frequency_estimation(w, cm_sketch):
     f = []
     for j in range(p):
-        i = hash(w + str(j)) % m
+        hash_func = get_hash_func(hash_name)
+        i = int(hash_func((w + str(j)).encode('utf-8')).hexdigest(), 16) % m
         f.append(cm_sketch[j, i])
     return min(f)
 
@@ -100,6 +105,23 @@ def save_result(cm_sketch_freq, exact_freq):
     return df
 
 
+def get_hash_func(hash_name):
+    if hash_name is None:
+        return hash
+    elif hash_name == 'sha1':
+        return hashlib.sha1
+    elif hash_name == 'sha224':
+        return hashlib.sha224
+    elif hash_name == 'sha256':
+        return hashlib.sha256
+    elif hash_name == 'sha384':
+        return hashlib.sha384
+    elif hash_name == 'sha512':
+        return hashlib.sha512
+    elif hash_name == 'md5':
+        return hashlib.md5
+
+
 # parse arguments
 parser = create_parser().parse_args()
 input = parser.input
@@ -107,11 +129,13 @@ k = parser.k
 m = parser.m
 p = parser.p
 c = parser.c
+hash_name = parser.hash
 print('input: ', input)
 print('k: ', k)
 print('m: ', m)
 print('p: ', p)
 print('c: ', c)
+print('hash: ', hash_name)
 
 # separators list
 separators = [' ', ',', '.', ':', ';', '!', '?', '—', '”', '“', '\n']
