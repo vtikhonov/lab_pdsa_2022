@@ -7,7 +7,7 @@ import re
 
 
 # PRIMES = (3, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203, 2281, 3217, 1281, 4423, 9689, 9941, 11213, 19937, 21701)  # простые числа Мерсенна
-PRIMES = (1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535, 131071, 262143, 524287, 1048575, 2097151)
+PRIMES = (7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535, 131071, 262143, 524287, 1048575, 2097151)
 
 
 def commline_parsing():  # создание агрументов для парсинга командной строки
@@ -17,6 +17,7 @@ def commline_parsing():  # создание агрументов для парс
     parser.add_argument('-m', type=int, help='Размер буфера алгоритма Count-Min Sketch', required=True)
     parser.add_argument('-p', type=int, help='Количество независимых хеш-функций', required=True)
     parser.add_argument('-c', type=int, default=12, help='Количество бит на счетчик, по умолчанию 12', required=True)
+    parser.add_argument('--hash', type=str, help='Хеш-алгоритм', required=True)
     return parser
 
 def get_allwords(path: str, skip_words: set):
@@ -68,7 +69,8 @@ class CountMinSketch:
     def add(self, x, delta=1):  # добавление чисел в матрицу
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
         for j in range(len(self.p)):
-            self.M[j][hash_indexes[j]] += delta  # +1
+            if self.M[j][hash_indexes[j]] < (2 ** self.c - delta):
+                self.M[j][hash_indexes[j]] += delta  # +1
 
     def frequency(self, x):  # поиск частоты элементов
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
@@ -104,10 +106,16 @@ def main():
         for line in skip_file.readlines():
             skip_words.add(line.rstrip("\n"))
 
-    primes = [random.choice(PRIMES) for _ in range(parser.p)]
+    primes = []
+    k = 0
+    while k < parser.p:
+        p_temp = random.choice(PRIMES)
+        if p_temp >= parser.m:
+            primes.append(p_temp)
+            k += 1
 
     for i in range(parser.p):
-        hash_funcs.add(HashFunction(random.randint(2, 1000), random.randint(2, 1000), primes[i], parser.m, hash_algo="sha1"))
+        hash_funcs.add(HashFunction(random.randint(2, 1000), random.randint(2, 1000), primes[i], parser.m, hash_algo = parser.hash))
 
     all_words = get_allwords(parser.input, skip_words)
     cms = CountMinSketch(parser.k, parser.m, hash_funcs, parser.c, all_words, skip_words)
