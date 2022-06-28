@@ -3,9 +3,11 @@ import string
 import argparse
 import random
 from operator import itemgetter
+import array
 
 prime_numbers = [127, 521, 607, 1279, 2203, 2281, 3217, 4253, 4423, 9689,
                  9941, 11213, 19937, 21701, 23209, 44497, 86243, 110503, 132049, 216091]
+
 
 class HashFunction:
     def __init__(self, x, y, prime, buffer):
@@ -46,20 +48,34 @@ def get_words_list(path_to_file):
     return arr
 
 
-def count_min_scetch(input_path, k, m, p):
+def count_min_scetch(input_path, k, m, p, c):
 
     hash_functions = []
     for i in range(p):
-        h = HashFunction(2*random.randint(1, 5000)+1, 2*random.randint(1, 5000)+1, random.choice(prime_numbers), m)
+        prime_num = m - 1
+        while prime_num < m:
+            prime_num = random.choice(prime_numbers)
+        h = HashFunction(2*random.randint(1, 5000)+1, 2*random.randint(1, 5000)+1, prime_num, m)
+
         hash_functions.append(h)
 
-    sketch = np.zeros([p, m])
+    if c <= 8:
+        size = "B"
+    elif c <= 16:
+        size = "I"
+    else:
+        size = "L"
 
+    sketch = [array.array(size, (0 for _ in range(m))) for _ in range(p)]
     arr = get_words_list(input_path)
     for word in arr:
         hashes = [i.getHashValue(word) for i in hash_functions]
         for i in range(p):
-            sketch[i, hashes[i]] += 1
+            try:
+                sketch[i][hashes[i]] += 1
+            except:
+                sketch[i] = array.array("I", sketch[i])
+                sketch[i][hashes[i]] += 1
 
     freq_dict = {}
 
@@ -67,7 +83,7 @@ def count_min_scetch(input_path, k, m, p):
         hashes = [k.getHashValue(i) for k in hash_functions]
         result = []
         for j in range(p):
-            result.append(sketch[j, hashes[j]])
+            result.append(sketch[j][hashes[j]])
         freq_dict[i] = min(result)
         freq_dict = dict(sorted(freq_dict.items(), key=itemgetter(1), reverse=True)[:k])
 
@@ -89,6 +105,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', type=int, help='number of top frequent element that we are looking for', required=True)
     parser.add_argument('-m', type=int, help='count-min sketch buffer size', required=True)
     parser.add_argument('-p', type=int, help='number of independent hash functions', required=True)
+    parser.add_argument('-c', type=int, default=12, help='number of bits per counter, default is 12', required=True)
 
     args = parser.parse_args()
 
@@ -96,7 +113,9 @@ if __name__ == '__main__':
     k = args.k
     m = args.m
     p = args.p
-    scetch_results = count_min_scetch(path_to_file, k, m, p)
+    c = args.c
+
+    scetch_results = count_min_scetch(path_to_file, k, m, p,c)
     reference_results = get_real_freq(path_to_file, list(scetch_results.keys()))
     final_list = [("word", "freq_ref", "freq_approx", "error")]
     for i in scetch_results:
