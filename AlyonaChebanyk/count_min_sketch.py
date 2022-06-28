@@ -76,8 +76,8 @@ def get_top_freq_elements(data, cm_sketch):
         else:
             f_w = cm_frequency_estimation(w, cm_sketch)
             X_f = {x: cm_frequency_estimation(x, cm_sketch) for x in X}
-            X_f_sorted = sorted(X_f.items(), key=lambda item: int(item[1]))
-            x_min, f_x_min = X_f_sorted[0][0], X_f_sorted[0][1]
+            x_min = min(X_f, key=X_f.get)
+            f_x_min = X_f[x_min]
             if f_w > f_x_min:
                 X.append(w)
                 X.remove(x_min)
@@ -108,7 +108,7 @@ m = parser.m
 p = parser.p
 c = parser.c
 print('input: ', input)
-print('k:', k)
+print('k: ', k)
 print('m: ', m)
 print('p: ', p)
 print('c: ', c)
