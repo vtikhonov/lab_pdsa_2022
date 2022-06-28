@@ -3,7 +3,6 @@ Written by Denis Rudnitskiy (@DeNRuDi) 2022
 """
 from typing import Dict
 import multiprocessing as mp
-import itertools
 import argparse
 import tabulate
 import hashlib
