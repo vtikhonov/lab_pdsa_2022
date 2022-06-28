@@ -1,4 +1,6 @@
 import pprint
+from array import array
+
 import numpy as np
 import argparse
 import random
@@ -27,7 +29,7 @@ class MyHash:
 
 def get_all_words(path_to_file):
     to_skip = []
-    with open("skip_word.txt", "r") as words:
+    with open("Kirill_Mikhalev\skip_word.txt", "r") as words:
         for line in words:
             for word in line.split():
                 to_skip.append(word)
@@ -60,31 +62,40 @@ if __name__ == '__main__':
     params.add_argument('-k', type=int, required=True)
     params.add_argument('-m', type=int, required=True)
     params.add_argument('-p', type=int, required=True)
-
+    params.add_argument('-c', type=int,default=12, required=False)
     params = params.parse_args()
     path_to_file = params.input
     k = params.k
     m = params.m
     p = params.p
+    c = params.c
+
+    if c > 16:
+        len_type = "L"
+    elif c >= 8:
+        len_type = "I"
+    else:
+        len_type = "B"
 
     hashes = []
     for i in range(p):
         h = MyHash(random.randint(10, 2500), random.randint(10, 2500), random.choice(numbers), m)
         hashes.append(h)
-    sketch = np.zeros([p, m])
+    # sketch = np.zeros([p, m])
     all_words = get_all_words(path_to_file)
-    count=0
+    sketch = [array(len_type, (0 for i in range(m))) for j in range(p)]
+
     for word in all_words:
         my_hashes = [i.getHash(word) for i in hashes]
         for i in range(p):
-            sketch[i, my_hashes[i]] += 1
+            sketch[i][my_hashes[i]] += 1
 
     freq_dict = {}
     for i in list(set(all_words)):
         my_hashes = [k.getHash(i) for k in hashes]
         result = []
         for j in range(p):
-            result.append(sketch[j, my_hashes[j]])
+            result.append(sketch[j] [my_hashes[j]])
         freq_dict[i] = min(result)
         freq_dict = dict(sorted(freq_dict.items(), key=itemgetter(1), reverse=True)[:k])
 
