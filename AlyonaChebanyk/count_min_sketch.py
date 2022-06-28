@@ -17,6 +17,8 @@ def create_parser():
                         default=int(2.7182 / epsilon))
     parser.add_argument('-p', type=int, help='number of independent hash functions', required=False,
                         default=int(np.log(1 / delta)))
+    parser.add_argument('-c', type=int, default=32, help='number of bits per counter, default is 12', required=False,
+                        choices=[8, 16, 32])
     return parser
 
 
@@ -25,6 +27,17 @@ def split(txt, seps):
     for sep in seps[1:]:
         txt = txt.replace(sep, default_sep)
     return [i.strip() for i in txt.split(default_sep)]
+
+
+def create_cm_sketch(c):
+    cm_sketch = None
+    if c == 8:
+        cm_sketch = np.zeros((p, m), dtype='uint8')
+    elif c == 16:
+        cm_sketch = np.zeros((p, m), dtype='uint16')
+    elif c == 32:
+        cm_sketch = np.zeros((p, m), dtype='uint32')
+    return cm_sketch
 
 
 def update_cm_sketch(data, cm_sketch):
@@ -39,7 +52,6 @@ def cm_frequency_estimation(w, cm_sketch):
     for j in range(p):
         i = hash(w + str(j)) % m
         f.append(cm_sketch[j, i])
-    # sorted_freq = sorted(f_dict.items(), key=lambda item: int(item[1]), reverse=True)
     return min(f)
 
 
@@ -94,10 +106,12 @@ input = parser.input
 k = parser.k
 m = parser.m
 p = parser.p
+c = parser.c
 print('input: ', input)
 print('k:', k)
 print('m: ', m)
 print('p: ', p)
+print('c: ', c)
 
 # separators list
 separators = [' ', ',', '.', ':', ';', '!', '?', '—', '”', '“', '\n']
@@ -116,7 +130,7 @@ words = [w.lower() for w in words if w.lower() not in words_skip]
 f.close()
 
 # frequency by count min sketch
-cm_sketch = np.zeros((p, m))
+cm_sketch = create_cm_sketch(c)
 update_cm_sketch(words, cm_sketch)
 X = get_top_freq_elements(words, cm_sketch)
 freq_cm_sketch = {x: cm_frequency_estimation(x, cm_sketch) for x in X}
