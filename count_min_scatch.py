@@ -78,15 +78,21 @@ def count_min_scetch(input_path, k, m, p, c):
                 sketch[i][hashes[i]] += 1
 
     freq_dict = {}
-
+    
     for i in list(set(arr)):
         hashes = [k.getHashValue(i) for k in hash_functions]
         result = []
         for j in range(p):
             result.append(sketch[j][hashes[j]])
-        freq_dict[i] = min(result)
-        freq_dict = dict(sorted(freq_dict.items(), key=itemgetter(1), reverse=True)[:k])
 
+        freq_dict[i] = min(result)
+        # print(freq_dict)
+        # print(min(freq_dict.values()))
+        if len(freq_dict) > k:
+            for ke in freq_dict:
+                if freq_dict[ke] == min(freq_dict.values()):
+                    freq_dict.pop(ke)
+                    break
     return freq_dict
 
 
