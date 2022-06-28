@@ -3,6 +3,7 @@ Written by Denis Rudnitskiy (@DeNRuDi) 2022
 """
 from typing import Dict
 import multiprocessing as mp
+import itertools
 import argparse
 import tabulate
 import hashlib
@@ -14,8 +15,7 @@ import io
 import os
 import re
 
-PRIMES = (7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203,
-          2281, 3217, 1281, 4423, 9689, 9941, 11213, 19937, 21701)
+PRIMES = (9689, 9941, 11213, 19937, 21701, 32767, 65535, 131071, 524287)
 PATTERN = re.compile(r'[(),.:;!?\n\t\'\\[\]"]')
 
 
@@ -95,22 +95,47 @@ class CountMinSketch:
         words_split = [self._filter_words[i::cores] for i in range(cores)]
         with mp.Pool(cores) as pool:
             result = pool.map(self._pre_parallel, words_split)
-        for di in result:
+            temp_dict = [i[0] for i in result]
+            temp_backet = [i[1] for i in result]
+            new_backet = temp_backet[0]
+
+        for icount, imatrix in enumerate(temp_backet[1:]):
+            for jcount, jmatrix, in enumerate(imatrix):
+                new_backet[jcount] = array.array(self.get_size(), (map(sum, zip(new_backet[jcount], jmatrix))))
+        self.backet = new_backet
+
+        for di in temp_dict:
             for word, count in di.items():
                 if word in temp.keys():
                     temp[word] += count
+                    print(word)
+                elif len(temp) == self.frequently:
+                    break
                 else:
                     temp[word] = count
-        word_count = list(reversed(sorted(temp.items(), key=lambda item: (item[1], item[0]))))
-        result = {k: v for (k, v) in word_count[:self.frequently]}
-        self._handle_result(result)
 
-    def _pre_parallel(self, data: list) -> dict:
-        temp: Dict[str, int] = {}
+        for i in temp:
+            temp.update({i: self.get(i)})
+
+        list_sorted = list(reversed(sorted(temp.items(), key=lambda item: (item[1], item[0]))))
+        self._handle_result(dict(list_sorted))
+
+    def _pre_parallel(self, data: list):
+        result: Dict[str, int] = {}
         for word in data:
             self.add(word)
-            temp.update({word: self.get(word)})
-        return temp
+            if len(result) < self.frequently:
+                result.update({word: self.get(word)})
+            else:
+                temp = result.copy()
+                if word in temp.keys():
+                    result.update({word: self.get(word)})
+                elif min(temp.values()) <= self.get(word):
+                    for k, v in temp.items():
+                        if v == min(temp.values()):
+                            result.pop(k)
+                            result.update({word: self.get(word)})
+        return [result, self.backet]
 
     def _get_freq_ref(self, data: Dict[str, int]) -> dict:
         freq_ref = {k: 0 for k in data.keys()}
