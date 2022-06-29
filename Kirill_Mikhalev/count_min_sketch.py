@@ -97,8 +97,11 @@ if __name__ == '__main__':
         for j in range(p):
             result.append(sketch[j] [my_hashes[j]])
         freq_dict[i] = min(result)
-        freq_dict = dict(sorted(freq_dict.items(), key=itemgetter(1), reverse=True)[:k])
-
+        if len(freq_dict) > k:
+            for word in freq_dict:
+                if freq_dict[word] == min(freq_dict.values()):
+                    freq_dict.pop(word)
+                    break
     scetch_results = freq_dict
     reference_results = get_real_freq(path_to_file, list(scetch_results.keys()))
     final_list = [("word", "freq_real", "freq_count_min", "errors")]
