@@ -98,8 +98,9 @@ if __name__ == '__main__':
             result.append(sketch[j] [my_hashes[j]])
         freq_dict[i] = min(result)
         if len(freq_dict) > k:
+            min_element= min(freq_dict.values())
             for word in freq_dict:
-                if freq_dict[word] == min(freq_dict.values()):
+                if freq_dict[word] == min_element:
                     freq_dict.pop(word)
                     break
     scetch_results = freq_dict
