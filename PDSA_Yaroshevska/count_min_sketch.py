@@ -61,10 +61,9 @@ class CountMinSketch:
                 if temp_word in temp_words_dict.keys():
                     self.words_dict.update({temp_word: self.frequency(temp_word)})
                 elif self.frequency(temp_word) >= min(temp_words_dict.values()):
-                    for k, v in temp_words_dict.items():
-                        if v == min(temp_words_dict.values()):
-                            self.words_dict.pop(k)
-                            self.words_dict.update({temp_word: self.frequency(temp_word)})
+                    self.words_dict = dict(sorted(self.words_dict.items(), key=lambda x: x[1], reverse=True))
+                    self.words_dict.popitem()
+                    self.words_dict.update({temp_word: self.frequency(temp_word)})
 
     def add(self, x, delta=1):  # добавление чисел в матрицу
         hash_indexes = [i.get_hashfunc_family(x) for i in self.p]
