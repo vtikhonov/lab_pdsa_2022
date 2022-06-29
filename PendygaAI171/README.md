@@ -1,7 +1,7 @@
-Python 3.10
-pip 21.3.1
-numpy 1.23.0
-pandas 1.4.3
+Python 3.10;
+pip 21.3.1;
+numpy 1.23.0;
+pandas 1.4.3;
 
 RUN
 
