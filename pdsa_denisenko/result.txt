@@ -1,0 +1,16 @@
+inputPath: Anne of Green Gables by L. M. Montgomery (8593).txt
+k: 10
+m: 1000
+p: 30
+c: 18
+      word  freqRef  freqApprox     error
+0     anne     1095        1102  0.639269
+1  marilla      784         786  0.255102
+2      mrs      404         409  1.237624
+3    diana      382         387  1.308901
+4      i’m      358         365  1.955307
+5     just      351         358  1.994302
+6  matthew      336         339  0.892857
+7    don’t      321         329  2.492212
+8     it’s      284         288  1.408451
+9       oh      269         274  1.858736
