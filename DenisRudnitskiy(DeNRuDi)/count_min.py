@@ -38,9 +38,9 @@ def get_skip_words(file: io.FileIO) -> set:
 
 
 class CountMinSketch:
-    __slots__ = ["frequently", "size", "hash_func", "count", "skip_words", "ccsv", "_filter_words", "backet"]
+    __slots__ = ["frequently", "size", "hash_func", "count", "skip_words", "ccsv", "_filter_words", "backet", "hasher"]
 
-    def __init__(self, frequently, size, hash_func, count, ccsv=None, skip_words=None):
+    def __init__(self, frequently, size, hash_func, count, hasher, ccsv=None, skip_words=None):
         self.frequently = frequently  # k
         self.size = size  # m
         self.hash_func = hash_func  # p
@@ -48,6 +48,7 @@ class CountMinSketch:
         self.skip_words = skip_words
         self.ccsv = ccsv
         self._filter_words = []
+        self.hasher = hasher
         self.backet = [array.array(self.get_size(), (0 for _ in range(self.size))) for _ in range(len(self.hash_func))]
 
     def get_size(self):
@@ -91,35 +92,34 @@ class CountMinSketch:
             if filter_word in self.skip_words or filter_word == "":
                 continue
             self._filter_words.append(filter_word)
-        words_split = [self._filter_words[i::cores] for i in range(cores)]
+
+        words_split = [[] for _ in range(cores)]
+        for word in self._filter_words:
+            if self.hasher:
+                words_split[int(getattr(hashlib, self.hasher)(word.encode("UTF-8")).hexdigest(), 16) % cores].append(word)
+            else:
+                words_split[abs(hash(word)) % cores].append(word)
+
         with mp.Pool(cores) as pool:
             result = pool.map(self._pre_parallel, words_split)
-            temp_dict = [i[0] for i in result]
-            temp_backet = [i[1] for i in result]
-            new_backet = temp_backet[0]
-
-        for icount, imatrix in enumerate(temp_backet[1:]):
-            for jcount, jmatrix, in enumerate(imatrix):
-                new_backet[jcount] = array.array(self.get_size(), (map(sum, zip(new_backet[jcount], jmatrix))))
-        self.backet = new_backet
-
-        for di in temp_dict:
+        for di in result:
             for word, count in di.items():
-                if word in temp.keys():
-                    temp[word] += count
-                    print(word)
-                elif len(temp) == self.frequently:
-                    break
+                if len(temp) < self.frequently:
+                    if word in temp.keys():
+                        temp[word] += count
+                    else:
+                        temp[word] = count
                 else:
-                    temp[word] = count
-
-        for i in temp:
-            temp.update({i: self.get(i)})
-
+                    te = temp.copy()
+                    if min(te.values()) < count:
+                        for k, v in te.items():
+                            if v == min(te.values()):
+                                temp.pop(k)
+                                temp.update({word: count})
         list_sorted = list(reversed(sorted(temp.items(), key=lambda item: (item[1], item[0]))))
         self._handle_result(dict(list_sorted))
 
-    def _pre_parallel(self, data: list):
+    def _pre_parallel(self, data: list) -> dict:
         result: Dict[str, int] = {}
         for word in data:
             self.add(word)
@@ -134,7 +134,7 @@ class CountMinSketch:
                         if v == min(temp.values()):
                             result.pop(k)
                             result.update({word: self.get(word)})
-        return [result, self.backet]
+        return result
 
     def _get_freq_ref(self, data: Dict[str, int]) -> dict:
         freq_ref = {k: 0 for k in data.keys()}
@@ -206,7 +206,7 @@ def main():
                  [random.choice(PRIMES) for _ in range(parser.p)][i],
                  hash_algo=parser.hash, buffer=parser.m) for i in range(parser.p)
     ]
-    c = CountMinSketch(parser.k, parser.m, hash_funcs, parser.c, parser.csv, skip_words)
+    c = CountMinSketch(parser.k, parser.m, hash_funcs, parser.c, parser.hash, parser.csv, skip_words)
     if parser.parallel:
         print(f"Running in parallel mode | {mp.cpu_count()} cores")
         c.handle_parallel_file(parser.input, mp.cpu_count())
