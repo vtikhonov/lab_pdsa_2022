@@ -32,17 +32,24 @@ def split(txt, seps):
 
 
 def create_cm_sketch(data):
-    count_min_sketch = None
-    if C == 8:
-        count_min_sketch = np.zeros((P, M), dtype='uint8')
-    elif C == 16:
-        count_min_sketch = np.zeros((P, M), dtype='uint16')
-    elif C == 32:
-        count_min_sketch = np.zeros((P, M), dtype='uint32')
+    dtype = {
+        8: 'uint8',
+        16: 'uint16',
+        32: 'uint32'
+    }
+    length = {
+        8: 255,
+        16: 65535,
+        32: 4294967295
+    }
+    count_min_sketch = np.zeros((P, M), dtype=dtype[C])
     for w in data:
         for j in range(P):
             i = hash(w + str(j)) % M
-            count_min_sketch[j, i] += 1
+            if count_min_sketch[j, i] < length[C]:
+                count_min_sketch[j, i] += 1
+            else:
+                break
     return count_min_sketch
 
 
