@@ -146,4 +146,6 @@ def result_view(cm_sketch_freq, exact_freq):
     df.insert(3, 'error', error, True)
     return df
 
+output_res = result_view(freq_approx, freq_ref)
 print(result_view(freq_approx, freq_ref))
+open('result.txt', 'w').write(output_res.to_string())

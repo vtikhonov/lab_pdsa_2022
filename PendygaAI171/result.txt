@@ -1,0 +1,11 @@
+      word  freq_ref  freq_approx     error
+0  defarge       279          282  1.075269
+1   doctor       184          188  2.173913
+2   father       158          165  4.430380
+3  manette       153          155  1.307190
+4    pross       149          151  1.342282
+5   carton       147          150  2.040816
+6   darnay       138          141  2.173913
+7   people       137          140  2.189781
+8    don’t       132          133  0.757576
+9     dear       123          127  3.252033
