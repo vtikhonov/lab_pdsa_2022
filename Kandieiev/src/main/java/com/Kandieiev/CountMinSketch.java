@@ -9,11 +9,7 @@ import static jdk.nashorn.internal.objects.NativeMath.abs;
 import static jdk.nashorn.internal.objects.NativeMath.min;
 import static jdk.nashorn.internal.runtime.ScriptObject.setGlobalObjectProto;
 
-public class CountMinSketch {
-
-    private byte [][] byteTables = null;
-    private short [][] shortTables= null;
-    private int [][] intTables = null;
+public abstract class CountMinSketch {
     private int size;
     private int func;
     private int[] a ;
@@ -21,33 +17,9 @@ public class CountMinSketch {
     private int[] mersene = {127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535, 131071};
     Random random = new Random();
     int p;
+    int maximum_cell_value;
 
-    public CountMinSketch(byte[][] byteTables, int size, int func) {
-        this.byteTables = new byte[func][size];
-        this.size = size;
-        this.func = func;
-        a = new int[func];
-        b = new int[func];
-        p = Arrays.stream(mersene).filter(el -> el > size).findAny().getAsInt();
-        for (int i = 0; i < func; i++) {
-            a[i] = random.nextInt(p-2)+1;
-            b[i] = random.nextInt(p-1);
-        }
-    }
-    public CountMinSketch(short[][] shortTables, int size, int func) {
-        this.shortTables = new short[func][size];
-        this.size = size;
-        this.func = func;
-        a = new int[func];
-        b = new int[func];
-        p = Arrays.stream(mersene).filter(el -> el > size).findAny().getAsInt();
-        for (int i = 0; i < func; i++) {
-            a[i] = random.nextInt(p-2)+1;
-            b[i] = random.nextInt(p-1);
-        }
-    }
-    public CountMinSketch(int[][] intTables, int size, int func) {
-        this.intTables = new int[func][size];
+    public CountMinSketch(int size, int func) {
         this.size = size;
         this.func = func;
         a = new int[func];
@@ -59,95 +31,71 @@ public class CountMinSketch {
         }
     }
 
-    public void intInsert(int val)
+    public void insert(int val)
     {
-        for (int i = 0; i < func; i++) {
-            int hash = hashFunction(val, i);
-            if (intTables.length>0)
-                intTables[i][hash]++;
-        }
-    }
-    public void shortInsert(int val)
-    {
-        for (int i = 0; i < func; i++) {
-            int hash = hashFunction(val, i);
-            shortTables[i][hash]++;
-        }
-    }
-    public void byteInsert(int val)
-    {
-        for (int i = 0; i < func; i++) {
-            int hash = hashFunction(val, i);
-            byteTables[i][hash]++;
-        }
+        //placeholder
     }
 
-    private int hashFunction(int val, int number){
+    protected int hashFunction(int val, int number){
         return (int)(((a[number] * (long)val + b[number])% p) % (size));
     }
 
 
-    public int intSketchCount(int val)
+    public int sketchCount(int val)
     {
-        int [] hashes = new int [func];
-        for (int i = 0; i < func; i++) {
-            int hash = hashFunction(val, i);
-            hashes[i] = intTables[i][hash];
-        }
-        int min = Arrays.stream(hashes).min().getAsInt();
-        return min;
+        return 0;
     }
 
-    public int shortSketchCount(int val)
-    {
-        int [] hashes = new int [func];
-        for (int i = 0; i < func; i++) {
-            int hash = hashFunction(val, i);
-            hashes[i] = shortTables[i][hash];
-        }
-        int min = Arrays.stream(hashes).min().getAsInt();
-        return min;
+    public void table(){
+        //placeholder
     }
 
-    public int byteSketchCount(int val)
-    {
-        int [] hashes = new int [func];
-        for (int i = 0; i < func; i++) {
-            int hash = hashFunction(val, i);
-            hashes[i] = byteTables[i][hash];
-        }
-        int min = Arrays.stream(hashes).min().getAsInt();
-        return min;
+    public int getSize() {
+        return size;
     }
 
-    public void intTable(){
-        for (int i = 0; i < func; i++) {
-            System.out.print("h" + i + ":  ");
-            for (int j = 0; j < size; j++) {
-                System.out.print(intTables[i][j] + "  ");
-            }
-            System.out.println("");
-        }
+    public void setSize(int size) {
+        this.size = size;
     }
 
-    public void shortTable(){
-        for (int i = 0; i < func; i++) {
-            System.out.print("h" + i + ":  ");
-            for (int j = 0; j < size; j++) {
-                System.out.print(shortTables[i][j] + "  ");
-            }
-            System.out.println("");
-        }
+    public int getFunc() {
+        return func;
     }
 
-    public void byteTable(){
-        for (int i = 0; i < func; i++) {
-            System.out.print("h" + i + ":  ");
-            for (int j = 0; j < size; j++) {
-                System.out.print(byteTables[i][j] + "  ");
-            }
-            System.out.println("");
-        }
+    public void setFunc(int func) {
+        this.func = func;
+    }
+
+    public int[] getA() {
+        return a;
+    }
+
+    public void setA(int[] a) {
+        this.a = a;
+    }
+
+    public int[] getB() {
+        return b;
+    }
+
+    public void setB(int[] b) {
+        this.b = b;
+    }
+
+    public int getP() {
+        return p;
+    }
+
+    public void setP(int p) {
+        this.p = p;
+    }
+
+    public int getMaximum_cell_value() {
+        return maximum_cell_value;
+    }
+
+    public void setMaximum_cell_value(int maximum_cell_value) {
+        this.maximum_cell_value = maximum_cell_value;
     }
 }
 
