@@ -3,6 +3,8 @@ import codecs
 import pandas as pd
 import argparse
 
+ROOT: str = "MartyniukAndrii/"
+
 DELTA: float = 0.02
 EPSILON: float = 0.005
 DELTA_EPSILON: float = 2.7182
@@ -14,10 +16,11 @@ P: int = int(np.log(1 / DELTA))
 
 def out_put_arguments():
     configuration = argparse.ArgumentParser()
-    configuration.add_argument('--file_path', type=str, required=False, default='text.txt')
+    configuration.add_argument('--file_path', type=str, required=False, default=ROOT + 'text.txt')
     configuration.add_argument('-k', type=int, required=False, default=K)
     configuration.add_argument('-m', type=int, required=False, default=M)
     configuration.add_argument('-p', type=int, required=False, default=P)
+    configuration.add_argument('-c', type=int, required=False, default=32, choices=[8, 16, 32])
     return configuration
 
 
@@ -28,7 +31,14 @@ def split(txt, seps):
     return [i.strip() for i in txt.split(default_sep)]
 
 
-def create_cm_sketch(data, count_min_sketch):
+def create_cm_sketch(data):
+    count_min_sketch = None
+    if C == 8:
+        count_min_sketch = np.zeros((P, M), dtype='uint8')
+    elif C == 16:
+        count_min_sketch = np.zeros((P, M), dtype='uint16')
+    elif C == 32:
+        count_min_sketch = np.zeros((P, M), dtype='uint32')
     for w in data:
         for j in range(P):
             i = hash(w + str(j)) % M
@@ -68,7 +78,8 @@ def get_top_frequency_elements(data, count_min_sketch):
                                           top_frequency_elements}
             sorted_new_top_frequency_elements = sorted(new_top_frequency_elements.items(),
                                                        key=lambda item: int(item[1]))
-            min_word, min_frequency = sorted_new_top_frequency_elements[0][0], sorted_new_top_frequency_elements[0][1]
+            min_word = min(new_top_frequency_elements, key=new_top_frequency_elements.get)
+            min_frequency = new_top_frequency_elements.get(min_word)
             if frequency_word > min_frequency:
                 top_frequency_elements.append(word)
                 top_frequency_elements.remove(min_word)
@@ -89,7 +100,7 @@ def save_result(count_min_sketch_frequency, exact_frequency):
     for ref, approx in zip(frequency_reference, count_min_sketch_frequency.values()):
         error.append(100 * abs(approx - ref) / ref)
     dataframe.insert(3, 'error', np.array(error), True)
-    dataframe.to_csv('result.csv', index=False)
+    dataframe.to_csv(ROOT + 'result.csv', index=False)
     return dataframe
 
 
@@ -99,16 +110,18 @@ if __name__ == "__main__":
     K = config.k
     M = config.m
     P = config.p
+    C = config.c
     print('file_path: ', file_path)
     print('k: ', K)
     print('m: ', M)
     print('p: ', P)
+    print('c: ', C)
 
     # separators list
     separators = [' ', ',', '.', ':', ';', '!', '?', '—', '(', ')', '[', ']', '{', '}', '”', '“', '/', '\n']
 
     # list of words to skip
-    words_skip_file = open('skip_words.txt', 'r')
+    words_skip_file = open(ROOT + 'skip_words.txt', 'r')
     skipped_words = words_skip_file.read()
     skipped_words = skipped_words.split('\n')
     words_skip_file.close()
@@ -121,7 +134,7 @@ if __name__ == "__main__":
     reading_file.close()
 
     # frequency by count min sketch
-    sketch = create_cm_sketch(words, np.zeros((P, M)))
+    sketch = create_cm_sketch(words)
     extra_words_list = get_top_frequency_elements(words, sketch)
     frequency_cm_sketch = {word: count_min_frequency_estimation(word, sketch) for word in extra_words_list}
 
