@@ -78,6 +78,9 @@ public class Main {
             String word = s.split(",")[i].split("=")[0].replaceAll(" ", "");
             int freq_ref = Integer.valueOf(s.split(",")[i].split("=")[1]);
             freq_approx = cms.sketchCount(Math.abs(word.hashCode()));
+            if (freq_approx < 0){
+                freq_approx = cms.getMaximum_cell_value() + freq_approx;
+            }
             System.out.format("+ %15s + %6s + %6s + %6s +%n", new String[]{word, Integer.toString(freq_ref), Integer.toString(freq_approx), new DecimalFormat("#0.00").format(Math.abs((double)(freq_approx - freq_ref)/freq_ref) * 100)});
         }
 

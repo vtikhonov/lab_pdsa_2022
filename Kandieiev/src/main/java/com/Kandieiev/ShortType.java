@@ -8,14 +8,14 @@ public class ShortType extends CountMinSketch{
     public ShortType(int size, int func) {
         super(size, func);
         this.shortTables = new short[func][size];
-        this.maximum_cell_value = (int) (Math.pow(2, 16)/2 -1);
+        this.maximum_cell_value = (int) (Math.pow(2, 16));
     }
 
     @Override
     public void insert(int val) {
         for (int i = 0; i < getFunc(); i++) {
             int hash = hashFunction(val, i);
-            if (shortTables[i][hash] < getMaximum_cell_value())
+            if (shortTables[i][hash] != -1)
                 shortTables[i][hash]++;
         }
     }
