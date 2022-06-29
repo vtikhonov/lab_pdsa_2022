@@ -22,7 +22,7 @@ public class Main {
         String text = readFile(file);
         text = text.toLowerCase(Locale.ROOT);
         text = text.replaceAll("[^A-Za-z ]", "");
-        text = deleteWords("D:/Лабораторные/Slovak/KandieievPDSA/bin/skip_words.txt", text);
+        text = deleteWords("skip_words.txt", text);
 
         Arrays.stream(text.split(" ")).forEach(e -> cms.insert(Math.abs(e.hashCode())));
 
