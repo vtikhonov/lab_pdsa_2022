@@ -2,15 +2,16 @@ inputPath: Anne of Green Gables by L. M. Montgomery (8593).txt
 k: 10
 m: 1000
 p: 30
-c: 18
-      word  freqRef  freqApprox     error
-0     anne     1095        1102  0.639269
-1  marilla      784         786  0.255102
-2      mrs      404         409  1.237624
-3    diana      382         387  1.308901
-4      i’m      358         365  1.955307
-5     just      351         358  1.994302
-6  matthew      336         339  0.892857
-7    don’t      321         329  2.492212
-8     it’s      284         288  1.408451
-9       oh      269         274  1.858736
+c: 30
+Hash Function: md5
+           word  freqRef  freqApprox        error
+0       project       90          39    56.666667
+1        ebooks        7          37   428.571429
+2  gutenberg-tm       56          36    35.714286
+3           new       78          35    55.128205
+4    foundation       24          34    41.666667
+5         email        2          33  1550.000000
+6          hear       42          32    23.809524
+7    newsletter        1          30  2900.000000
+8     donations       15          29    93.333333
+9          help       46          29    36.956522
