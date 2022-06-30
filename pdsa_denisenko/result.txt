@@ -1,0 +1,17 @@
+inputPath: Anne of Green Gables by L. M. Montgomery (8593).txt
+k: 10
+m: 1000
+p: 30
+c: 30
+Hash Function: md5
+           word  freqRef  freqApprox        error
+0       project       90          39    56.666667
+1        ebooks        7          37   428.571429
+2  gutenberg-tm       56          36    35.714286
+3           new       78          35    55.128205
+4    foundation       24          34    41.666667
+5         email        2          33  1550.000000
+6          hear       42          32    23.809524
+7    newsletter        1          30  2900.000000
+8     donations       15          29    93.333333
+9          help       46          29    36.956522

@@ -47,4 +47,3 @@ The input datasets shall be read as a txt file and the words extracted using " ,
 * The result shall be deterministic, i.e. any involved pseudo-randomness shall be manageable - use predefined/hardcoded seeds. If sorting is needed, use a stable version.
 * Covering the code with unittest is a big plus
 * If your application building/running requires any special steps, please mention it a readme-like file. Ideally it would be some `run.sh` script that compiles (if needed) and runs the app with all the arguments like `run.sh --input mybook.txt -k 20 -p 7 -m 512`
-
