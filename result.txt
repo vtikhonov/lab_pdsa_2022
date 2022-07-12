@@ -1,0 +1,11 @@
+         word  freqRef  freqApprox        error
+0        hear       20        64.0   220.000000
+1        make       39        58.0    48.717949
+2         new       42        58.0    38.095238
+3   subscribe        1        58.0  5700.000000
+4        help        8        57.0   612.500000
+5     produce        6        55.0   816.666667
+6  newsletter        1        54.0  5300.000000
+7     archive       13        49.0   276.923077
+8      ebooks        7        49.0   600.000000
+9       email        2        49.0  2350.000000
